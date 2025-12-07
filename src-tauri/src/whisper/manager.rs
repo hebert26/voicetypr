@@ -147,6 +147,21 @@ impl WhisperManager {
             recommended: true,    // Recommended model
         });
 
+        // Distil-Whisper: Knowledge-distilled model, 5-6x faster than large-v3
+        // English-only, within 0.8% WER of large-v3
+        // Source: https://huggingface.co/distil-whisper/distil-large-v3-ggml
+        models.insert("distil-large-v3".to_string(), ModelInfo {
+            name: "distil-large-v3".to_string(),
+            display_name: "Distil Large v3".to_string(),
+            size: 1_510_000_000, // ~1.5 GB
+            url: "https://huggingface.co/distil-whisper/distil-large-v3-ggml/resolve/main/ggml-distil-large-v3.bin".to_string(),
+            sha256: "".to_string(), // No official checksum available
+            downloaded: false,
+            speed_score: 9,       // 5-6x faster than large-v3
+            accuracy_score: 8,    // Within 0.8% WER of large-v3, English-only
+            recommended: true,    // Excellent speed/accuracy tradeoff
+        });
+
         models.insert(
             "small.en".to_string(),
             ModelInfo {

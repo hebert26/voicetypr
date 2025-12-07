@@ -454,9 +454,17 @@ pub async fn get_enhancement_options(app: tauri::AppHandle) -> Result<Enhancemen
 
     // Load from store or return defaults
     if let Some(options_value) = store.get("enhancement_options") {
-        serde_json::from_value(options_value.clone())
-            .map_err(|e| format!("Failed to parse enhancement options: {}", e))
+        log::info!("[get_enhancement_options] Raw stored value: {:?}", options_value);
+        let options: EnhancementOptions = serde_json::from_value(options_value.clone())
+            .map_err(|e| format!("Failed to parse enhancement options: {}", e))?;
+        log::info!(
+            "[get_enhancement_options] Loaded: preset={:?}, custom_instructions={:?}",
+            options.preset,
+            options.custom_instructions
+        );
+        Ok(options)
     } else {
+        log::info!("[get_enhancement_options] No stored options, using defaults");
         Ok(EnhancementOptions::default())
     }
 }
@@ -478,7 +486,11 @@ pub async fn update_enhancement_options(
         .save()
         .map_err(|e| format!("Failed to save enhancement options: {}", e))?;
 
-    log::info!("Enhancement options updated: preset={:?}", options.preset);
+    log::info!(
+        "Enhancement options updated: preset={:?}, custom_instructions={:?}",
+        options.preset,
+        options.custom_instructions
+    );
 
     Ok(())
 }

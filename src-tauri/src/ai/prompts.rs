@@ -27,12 +27,18 @@ pub enum EnhancementPreset {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EnhancementOptions {
     pub preset: EnhancementPreset,
+    #[serde(default)]
+    pub custom_vocabulary: Vec<String>,
+    #[serde(default)]
+    pub custom_instructions: Option<String>,
 }
 
 impl Default for EnhancementOptions {
     fn default() -> Self {
         Self {
             preset: EnhancementPreset::Default,
+            custom_vocabulary: Vec::new(),
+            custom_instructions: None,
         }
     }
 }
@@ -72,6 +78,15 @@ pub fn build_enhancement_prompt(
         prompt.push_str(&format!("\n\nContext: {}", ctx));
     }
 
+    // Add custom instructions if provided
+    if let Some(instructions) = &options.custom_instructions {
+        if !instructions.trim().is_empty() {
+            log::info!("[AI Prompt] Adding custom instructions: {}", instructions.trim());
+            prompt.push_str(&format!("\n\nAdditional instructions: {}", instructions.trim()));
+        }
+    }
+
+    log::debug!("[AI Prompt] Full prompt built:\n{}", prompt);
     prompt
 }
 

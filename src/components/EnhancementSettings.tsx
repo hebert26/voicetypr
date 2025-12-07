@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { FileText, Mail, GitCommit, Sparkles } from "lucide-react";
 
 interface EnhancementSettingsProps {
   settings: {
     preset: "Default" | "Prompts" | "Email" | "Commit";
     customVocabulary: string[];
+    customInstructions?: string;
   };
   onSettingsChange: (settings: any) => void;
   disabled?: boolean;
@@ -47,6 +49,13 @@ export function EnhancementSettings({ settings, onSettingsChange, disabled = fal
     }
   };
 
+  const handleCustomInstructionsChange = (value: string) => {
+    onSettingsChange({
+      ...settings,
+      customInstructions: value
+    });
+  };
+
 
   return (
     <div className={`space-y-6 ${disabled ? 'opacity-50' : ''}`}>
@@ -79,6 +88,21 @@ export function EnhancementSettings({ settings, onSettingsChange, disabled = fal
           {settings.preset === "Prompts" && "Transform speech into clear, actionable AI prompts"}
           {settings.preset === "Email" && "Format as professional email with subject, greeting, and signature"}
           {settings.preset === "Commit" && "Create conventional commit message (feat, fix, docs, etc.)"}
+        </p>
+      </div>
+
+      {/* Custom Instructions */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Custom Instructions (optional)</label>
+        <Textarea
+          placeholder="Add custom instructions, e.g., 'Make sure the text makes sense, fix grammar, use formal tone'"
+          value={settings.customInstructions || ""}
+          onChange={(e) => !disabled && handleCustomInstructionsChange(e.target.value)}
+          disabled={disabled}
+          className="min-h-[80px] resize-none"
+        />
+        <p className="text-xs text-muted-foreground">
+          These instructions will be added to the AI prompt along with your selected preset.
         </p>
       </div>
     </div>

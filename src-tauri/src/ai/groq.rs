@@ -198,10 +198,22 @@ impl AIProvider for GroqProvider {
         // Validate request
         request.validate()?;
 
+        // Log what options we received
+        log::info!(
+            "[GroqProvider] Request options: {:?}",
+            request.options
+        );
+
         let prompt = prompts::build_enhancement_prompt(
             &request.text,
             request.context.as_deref(),
             &request.options.unwrap_or_default(),
+        );
+
+        // Log the FULL prompt being sent to the API
+        log::info!(
+            "[GroqProvider] Full prompt being sent to API:\n---START PROMPT---\n{}\n---END PROMPT---",
+            prompt
         );
 
         // Log API request details (only if logging is enabled)

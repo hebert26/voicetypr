@@ -175,10 +175,22 @@ impl AIProvider for OpenAIProvider {
     ) -> Result<AIEnhancementResponse, AIError> {
         request.validate()?;
 
+        // Log what options we received
+        log::info!(
+            "[OpenAIProvider] Request options: {:?}",
+            request.options
+        );
+
         let prompt = prompts::build_enhancement_prompt(
             &request.text,
             request.context.as_deref(),
             &request.options.unwrap_or_default(),
+        );
+
+        // Log the FULL prompt being sent to the API
+        log::info!(
+            "[OpenAIProvider] Full prompt being sent to API:\n---START PROMPT---\n{}\n---END PROMPT---",
+            prompt
         );
 
         let temperature = self

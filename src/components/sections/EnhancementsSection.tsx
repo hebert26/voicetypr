@@ -47,9 +47,11 @@ export function EnhancementsSection() {
   const [enhancementOptions, setEnhancementOptions] = useState<{
     preset: "Default" | "Prompts" | "Email" | "Commit";
     customVocabulary: string[];
+    customInstructions?: string;
   }>({
     preset: 'Default',
     customVocabulary: [],
+    customInstructions: 'Fix any mistakes. Make sure sentences are clear and make sense.',
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
@@ -78,7 +80,10 @@ export function EnhancementsSection() {
   const loadEnhancementOptions = async () => {
     try {
       const options = await invoke<EnhancementOptions>("get_enhancement_options");
-      setEnhancementOptions(fromBackendOptions(options));
+      console.log("[EnhancementOptions] Loaded from backend:", options);
+      const frontendOptions = fromBackendOptions(options);
+      console.log("[EnhancementOptions] Frontend format:", frontendOptions);
+      setEnhancementOptions(frontendOptions);
     } catch (error) {
       console.error("Failed to load enhancement options:", error);
     }
@@ -244,12 +249,17 @@ export function EnhancementsSection() {
   }, [settingsLoaded]);
 
   const handleEnhancementOptionsChange = async (newOptions: typeof enhancementOptions) => {
+    console.log("[EnhancementOptions] Saving:", newOptions);
+    const backendOptions = toBackendOptions(newOptions);
+    console.log("[EnhancementOptions] Backend format:", backendOptions);
     setEnhancementOptions(newOptions);
     try {
       await invoke("update_enhancement_options", {
-        options: toBackendOptions(newOptions)
+        options: backendOptions
       });
+      console.log("[EnhancementOptions] Saved successfully");
     } catch (error) {
+      console.error("[EnhancementOptions] Failed to save:", error);
       toast.error(`Failed to save enhancement options: ${error}`);
     }
   };
@@ -426,12 +436,10 @@ export function EnhancementsSection() {
               <div className="h-px bg-border/50 flex-1" />
             </div>
 
-            <div className={!aiSettings.enabled ? "opacity-50 pointer-events-none" : ""}>
-              <EnhancementSettings
-                settings={enhancementOptions}
-                onSettingsChange={handleEnhancementOptionsChange}
-              />
-            </div>
+            <EnhancementSettings
+              settings={enhancementOptions}
+              onSettingsChange={handleEnhancementOptionsChange}
+            />
           </div>
 
           {/* Setup Guide */}

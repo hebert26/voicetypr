@@ -1,10 +1,6 @@
 <div align="center">
   <img src="src-tauri/icons/icon.png" alt="VoiceTypr Logo" width="128" height="128">
 
-tccutil reset Accessibility com.ideaplexa.voicetypr
-
-/Users/hebertg/iOSDev/voicetypr/scripts/build-release.sh
-
   # VoiceTypr
 
   **Open Source AI Powered voice to text dictation tool, alternative to superwhisper, whispr flow**
@@ -15,7 +11,7 @@ tccutil reset Accessibility com.ideaplexa.voicetypr
   [![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D6)](https://www.microsoft.com/windows)
   [![Downloads](https://img.shields.io/github/downloads/moinulmoin/voicetypr/total)](https://github.com/moinulmoin/voicetypr/releases)
 
-  [Download](https://github.com/moinulmoin/voicetypr/releases/latest) • [Features](#features) • [Installation](#installation) • [Usage](#usage)
+  [Download](https://github.com/moinulmoin/voicetypr/releases/latest) • [Features](#features) • [Installation](#installation) • [Usage](#usage) • [Build from Source](#️-building-from-source)
 </div>
 
 ## 🎯 What is VoiceTypr?
@@ -41,7 +37,7 @@ VoiceTypr is an open source AI voice-to-text dictation tool, alternative to Wisp
 - Minimal resource usage with maximum efficiency
 
 ### 🔒 **Privacy First**
-- Complete offline operation - no cloud, no tracking (only trial check)
+- Complete offline operation - no cloud, no tracking, no external calls
 - Your recordings stay on your device
 - Open source for full transparency
 
@@ -128,6 +124,63 @@ voicetypr/
 │   └── capabilities/      # Security capabilities
 ├── scripts/               # Build and utility scripts
 └── tests/                 # Test suites
+```
+
+## 🛠️ Building from Source
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or later)
+- [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
+- [Rust](https://www.rust-lang.org/tools/install) (latest stable)
+- [cmake](https://cmake.org/) (`brew install cmake` on macOS)
+
+### Build Steps
+
+```bash
+# Clone the repository
+git clone https://github.com/moinulmoin/voicetypr.git
+cd voicetypr
+
+# Install dependencies
+pnpm install
+
+# Development mode (with hot reload)
+pnpm tauri dev
+
+# Build release bundle (.app and .dmg on macOS)
+./scripts/build-release.sh
+```
+
+The built app will be at:
+- **App bundle:** `src-tauri/target/release/bundle/macos/VoiceTypr.app`
+- **DMG installer:** `src-tauri/target/release/bundle/dmg/VoiceTypr_*.dmg`
+
+### Reset Permissions (if needed)
+
+If you need to reset accessibility permissions after rebuilding:
+
+```bash
+tccutil reset Accessibility com.ideaplexa.voicetypr
+```
+
+### Model Storage Location
+
+Downloaded AI models are stored in the app's data directory:
+
+**macOS:**
+```
+~/Library/Application Support/com.ideaplexa.voicetypr/models/
+```
+
+**Windows:**
+```
+%APPDATA%\com.ideaplexa.voicetypr\models\
+```
+
+To view downloaded models (macOS):
+```bash
+ls -lh ~/Library/Application\ Support/com.ideaplexa.voicetypr/models/
 ```
 
 ## 🔧 Troubleshooting

@@ -23,7 +23,10 @@
       "Bash(npm run tauri:*)",
       "Bash(pnpm --version:*)",
       "Bash(cmake --version:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(ls:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "additionalDirectories": [
