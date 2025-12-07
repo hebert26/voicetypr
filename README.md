@@ -1,6 +1,10 @@
 <div align="center">
   <img src="src-tauri/icons/icon.png" alt="VoiceTypr Logo" width="128" height="128">
 
+tccutil reset Accessibility com.ideaplexa.voicetypr
+
+/Users/hebertg/iOSDev/voicetypr/scripts/build-release.sh
+
   # VoiceTypr
 
   **Open Source AI Powered voice to text dictation tool, alternative to superwhisper, whispr flow**

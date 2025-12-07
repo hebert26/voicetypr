@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+// License context - simplified for fully offline/private operation
+// Always returns "licensed" status without any network calls
+
+import { createContext, useContext, ReactNode } from 'react';
 import { LicenseStatus } from '@/types';
-import { toast } from 'sonner';
 
 interface LicenseContextValue {
   status: LicenseStatus | null;
@@ -15,96 +16,26 @@ interface LicenseContextValue {
 
 const LicenseContext = createContext<LicenseContextValue | undefined>(undefined);
 
+// Always return licensed status (offline mode)
+const licensedStatus: LicenseStatus = {
+  status: 'licensed',
+  trial_days_left: undefined,
+  license_type: 'offline',
+  license_key: undefined,
+  expires_at: undefined,
+};
+
 export function LicenseProvider({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<LicenseStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const checkStatus = async () => {
-    try {
-      setIsLoading(true);
-      console.log(`[${new Date().toISOString()}] Frontend: Checking license status...`);
-      const licenseStatus = await invoke<LicenseStatus>('check_license_status');
-      console.log(`[${new Date().toISOString()}] Frontend: License status received:`, licenseStatus);
-      setStatus(licenseStatus);
-    } catch (error) {
-      console.error('Failed to check license status:', error);
-      toast.error('Failed to check license status');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const restoreLicense = async () => {
-    try {
-      const licenseStatus = await invoke<LicenseStatus>('restore_license');
-      setStatus(licenseStatus);
-      toast.success('License restored successfully');
-    } catch (error: any) {
-      console.error('Failed to restore license:', error);
-      if (error.includes('No license found')) {
-        toast.error('No license found. Please enter your license key manually.');
-      } else if (error.includes('already activated on another device')) {
-        toast.error('This license is already activated on another device');
-      } else if (error.includes('maximum number of devices')) {
-        toast.error('This license has reached its device activation limit');
-      } else if (error.includes('Invalid license key')) {
-        toast.error('Invalid license key');
-      } else {
-        toast.error(error || 'Failed to restore license');
-      }
-    }
-  };
-
-  const activateLicense = async (key: string) => {
-    try {
-      const licenseStatus = await invoke<LicenseStatus>('activate_license', { licenseKey: key });
-      setStatus(licenseStatus);
-      toast.success('License activated successfully');
-    } catch (error: any) {
-      console.error('Failed to activate license:', error);
-      if (error.includes('already activated on another device')) {
-        toast.error('This license is already activated on another device');
-      } else if (error.includes('maximum number of devices')) {
-        toast.error('This license has reached its device activation limit');
-      } else if (error.includes('Invalid license key')) {
-        toast.error('Invalid license key');
-      } else {
-        toast.error(error || 'Failed to activate license');
-      }
-    }
-  };
-
-  const deactivateLicense = async () => {
-    try {
-      await invoke('deactivate_license');
-      // Re-check status after deactivation
-      await checkStatus();
-      toast.success('License deactivated successfully');
-    } catch (error: any) {
-      console.error('Failed to deactivate license:', error);
-      toast.error(error || 'Failed to deactivate license');
-    }
-  };
-
-  const openPurchasePage = async () => {
-    try {
-      await invoke('open_purchase_page');
-    } catch (error) {
-      console.error('Failed to open purchase page:', error);
-      // Fallback to window.open
-      window.open('https://voicetypr.com/#pricing', '_blank');
-    }
-  };
-
-  // Check license status on mount
-  useEffect(() => {
-    console.log(`[${new Date().toISOString()}] Frontend: LicenseProvider mounted, checking status...`);
-    checkStatus();
-  }, []);
+  // All functions are no-ops in offline mode
+  const checkStatus = async () => {};
+  const restoreLicense = async () => {};
+  const activateLicense = async (_key: string) => {};
+  const deactivateLicense = async () => {};
+  const openPurchasePage = async () => {};
 
   const value: LicenseContextValue = {
-    status,
-    isLoading,
+    status: licensedStatus,
+    isLoading: false,
     checkStatus,
     restoreLicense,
     activateLicense,

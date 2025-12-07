@@ -1,6 +1,4 @@
-use crate::commands::license::check_license_status_internal;
 use crate::emit_to_all;
-use crate::license::LicenseState;
 use crate::parakeet::{ParakeetManager, ParakeetModelStatus};
 use crate::secure_store;
 use crate::utils::onboarding_logger;
@@ -676,16 +674,7 @@ pub async fn preload_model(
     use crate::whisper::cache::TranscriberCache;
     use tauri::async_runtime::Mutex as AsyncMutex;
 
-    // Check license status before preloading
-    log::info!("[Preload] Checking license status before preload_model");
-    let license_status = check_license_status_internal(&app).await?;
-    if matches!(
-        license_status.status,
-        LicenseState::Expired | LicenseState::None
-    ) {
-        return Err("License required to preload models".to_string());
-    }
-
+    // License check removed - app is fully offline/private
     log::info!("Preloading model: {}", model_name);
 
     // Get model path

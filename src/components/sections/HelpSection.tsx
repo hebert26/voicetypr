@@ -58,21 +58,18 @@ export function HelpSection() {
   useEffect(() => {
     const fetchSystemInfo = async () => {
       try {
-        const [appVer, os, osVer, deviceId] = await Promise.all([
+        const [appVer, os, osVer] = await Promise.all([
           getVersion(),
           platform(),
           osVersion(),
-          // Best-effort: if backend not ready, ignore and continue
-          invoke<string>('get_device_id').catch(() => 'Unknown')
         ]);
         setAppVersion(appVer);
         setPlatformName(`${os} ${osVer}`);
-        
-        // Prepare diagnostics info
+
+        // Prepare diagnostics info (no device ID for privacy)
         const lines: string[] = [
           `App Version: ${appVer}`,
           `OS: ${os} ${osVer}`,
-          `Device ID: ${deviceId}`,
           `Model: ${settings?.current_model || 'None selected'}`,
         ];
 

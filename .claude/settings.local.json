@@ -13,10 +13,22 @@
       "Bash(rg:*)",
       "WebSearch",
       "mcp__sequential-thinking__sequentialthinking",
-      "Bash(pnpm audit:*)"
+      "Bash(pnpm audit:*)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm tauri dev:*)",
+      "Bash(cat:*)",
+      "Bash(npm run tauri:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(cmake --version:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
-    "additionalDirectories": ["/Users/moinulmoin/Developer/oss/voicetypr-web"]
+    "additionalDirectories": [
+      "/Users/moinulmoin/Developer/oss/voicetypr-web"
+    ]
   },
   "hooks": {
     "PreToolUse": [
