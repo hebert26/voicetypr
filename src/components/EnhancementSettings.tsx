@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Mail, GitCommit, Sparkles } from "lucide-react";
+import { FileText, Sparkles } from "lucide-react";
 
 interface EnhancementSettingsProps {
   settings: {
-    preset: "Default" | "Prompts" | "Email" | "Commit";
+    preset: "Default" | "Prompts";
     customVocabulary: string[];
     customInstructions?: string;
   };
@@ -25,26 +25,14 @@ export function EnhancementSettings({ settings, onSettingsChange, disabled = fal
       label: "Prompts",
       icon: Sparkles,
       description: "AI prompts"
-    },
-    {
-      id: "Email",
-      label: "Email",
-      icon: Mail,
-      description: "Email format"
-    },
-    {
-      id: "Commit",
-      label: "Commit",
-      icon: GitCommit,
-      description: "Git messages"
     }
   ];
 
   const handlePresetChange = (preset: string) => {
-    if (["Default", "Prompts", "Email", "Commit"].includes(preset)) {
+    if (["Default", "Prompts"].includes(preset)) {
       onSettingsChange({
         ...settings,
-        preset: preset as "Default" | "Prompts" | "Email" | "Commit"
+        preset: preset as "Default" | "Prompts"
       });
     }
   };
@@ -86,8 +74,6 @@ export function EnhancementSettings({ settings, onSettingsChange, disabled = fal
         <p className="text-sm text-muted-foreground">
           {settings.preset === "Default" && "Format transcription with grammar, spelling, punctuation, and semantic corrections"}
           {settings.preset === "Prompts" && "Transform speech into clear, actionable AI prompts"}
-          {settings.preset === "Email" && "Format as professional email with subject, greeting, and signature"}
-          {settings.preset === "Commit" && "Create conventional commit message (feat, fix, docs, etc.)"}
         </p>
       </div>
 

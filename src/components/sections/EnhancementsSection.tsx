@@ -1,14 +1,12 @@
-import { ApiKeyModal } from "@/components/ApiKeyModal";
 import { EnhancementModelCard } from "@/components/EnhancementModelCard";
 import { EnhancementSettings } from "@/components/EnhancementSettings";
 import { OllamaConfigModal } from "@/components/OllamaConfigModal";
-import { OpenAICompatConfigModal } from "@/components/OpenAICompatConfigModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { EnhancementOptions } from "@/types/ai";
 import { fromBackendOptions, toBackendOptions } from "@/types/ai";
-import { hasApiKey, removeApiKey, saveApiKey, getApiKey, saveOpenAIKeyWithConfig } from "@/utils/keyring";
+import { hasApiKey, getApiKey, removeApiKey, saveOpenAIKeyWithConfig } from "@/utils/keyring";
 import { useReadinessState } from "@/contexts/ReadinessContext";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -35,19 +33,15 @@ export function EnhancementsSection() {
   
   const [aiSettings, setAISettings] = useState<AISettings>({
     enabled: false,
-    provider: "groq",
+    provider: "openai", // Ollama uses openai provider internally
     model: "",  // Empty by default until user selects
     hasApiKey: false,
   });
 
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [showOpenAIConfig, setShowOpenAIConfig] = useState(false);
   const [showOllamaConfig, setShowOllamaConfig] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
   const [providerApiKeys, setProviderApiKeys] = useState<Record<string, boolean>>({});
   const [enhancementOptions, setEnhancementOptions] = useState<{
-    preset: "Default" | "Prompts" | "Email" | "Commit";
+    preset: "Default" | "Prompts";
     customVocabulary: string[];
     customInstructions?: string;
   }>({
@@ -57,31 +51,13 @@ export function EnhancementsSection() {
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-  // Groq, Gemini, Ollama (local), and OpenAI-compatible
+  // Only Ollama (local) - runs AI locally without API keys
   const models: AIModel[] = [
-    {
-      id: "llama-3.1-8b-instant",
-      name: "Llama 3.1 8B Instant",
-      provider: "groq",
-      description: "Fast and efficient model for instant responses"
-    },
-    {
-      id: "gemini-2.5-flash-lite",
-      name: "Gemini 2.5 Flash Lite",
-      provider: "gemini",
-      description: "Google's lightweight flash model for quick processing"
-    },
     {
       id: "ollama-local",
       name: "🦙 Ollama (Local)",
       provider: "ollama",
       description: "Run AI locally - no API key or internet needed"
-    },
-    {
-      id: "openai-compatible",
-      name: "OpenAI Compatible",
-      provider: "openai",
-      description: "Configure any OpenAI-compatible endpoint"
     }
   ];
 
@@ -292,33 +268,9 @@ export function EnhancementsSection() {
     }
   };
 
-  const handleApiKeySubmit = async (apiKey: string) => {
-    setIsLoading(true);
-    try {
-      // Save API key using Stronghold
-      await saveApiKey(selectedProvider, apiKey.trim());
-
-      // Close modal first to give feedback
-      setShowApiKeyModal(false);
-      toast.success("API key saved securely");
-
-      // No need for delay - the event listener will handle the reload
-    } catch (error) {
-      toast.error(`Failed to save API key: ${error}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSetupApiKey = (provider: string) => {
-    setSelectedProvider(provider);
-    if (provider === 'ollama') {
-      setShowOllamaConfig(true);
-    } else if (provider === 'openai') {
-      setShowOpenAIConfig(true);
-    } else {
-      setShowApiKeyModal(true);
-    }
+  const handleSetupApiKey = () => {
+    // Only Ollama is supported
+    setShowOllamaConfig(true);
   };
 
   const handleModelSelect = async (modelId: string, provider: string) => {
@@ -358,16 +310,6 @@ export function EnhancementsSection() {
       console.error(`[AI Settings] Failed to remove API key:`, error);
       toast.error(`Failed to remove API key: ${error}`);
     }
-  };
-
-  const getProviderDisplayName = (provider: string) => {
-    const names: Record<string, string> = {
-      groq: "Groq",
-      gemini: "Gemini",
-      ollama: "Ollama",
-      openai: "OpenAI Compatible"
-    };
-    return names[provider] || provider;
   };
 
   // Valid config is either a cached key in keyring OR backend-validated config (OpenAI no-auth)
@@ -436,19 +378,13 @@ export function EnhancementsSection() {
                     model={model}
                     hasApiKey={hasKey}
                     isSelected={isSelected}
-                    onSetupApiKey={() => handleSetupApiKey(model.provider)}
+                    onSetupApiKey={handleSetupApiKey}
                     onSelect={() => {
-                      if (model.provider === 'ollama') {
-                        // For Ollama, open config modal if not configured, otherwise just select
-                        if (!providerApiKeys['ollama']) {
-                          handleSetupApiKey(model.provider);
-                        } else {
-                          handleModelSelect(aiSettings.model, 'openai');
-                        }
-                      } else if (model.provider === 'openai') {
-                        handleModelSelect(aiSettings.model, model.provider);
+                      // For Ollama, open config modal if not configured, otherwise just select
+                      if (!providerApiKeys['ollama']) {
+                        handleSetupApiKey();
                       } else {
-                        handleModelSelect(model.id, model.provider);
+                        handleModelSelect(aiSettings.model, 'openai');
                       }
                     }}
                     onRemoveApiKey={() => handleRemoveApiKey(model.provider)}
@@ -481,14 +417,13 @@ export function EnhancementsSection() {
                 <div className="space-y-2 flex-1">
                   <h3 className="font-medium text-sm">Quick Setup</h3>
                   <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
-                    <li>Click "Add Key" on a model above</li>
-                    <li>Get your API key from the provider's website</li>
-                    <li>Paste the API key and save</li>
-                    <li>Select the model you want to use</li>
-                    <li>Toggle AI Formatting on to enable</li>
+                    <li>Install Ollama from <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">ollama.ai</a></li>
+                    <li>Pull a model: <code className="bg-muted px-1 rounded text-xs">ollama pull qwen2.5:3b</code></li>
+                    <li>Click "Configure" on the Ollama card above</li>
+                    <li>Test the connection and save</li>
                   </ol>
                   <p className="text-xs text-muted-foreground mt-3">
-                    AI formatting automatically improves your transcribed text with proper punctuation, capitalization, and style.
+                    AI formatting runs locally on your machine - no API key or internet needed.
                   </p>
                 </div>
               </div>
@@ -497,38 +432,11 @@ export function EnhancementsSection() {
         </div>
       </ScrollArea>
 
-      <ApiKeyModal
-        isOpen={showApiKeyModal}
-        onClose={() => setShowApiKeyModal(false)}
-        onSubmit={handleApiKeySubmit}
-        providerName={getProviderDisplayName(selectedProvider)}
-        isLoading={isLoading}
-      />
-      <OpenAICompatConfigModal
-        isOpen={showOpenAIConfig}
-        defaultBaseUrl="https://api.openai.com"
-        defaultModel={aiSettings.model}
-        onClose={() => setShowOpenAIConfig(false)}
-        onSubmit={async ({ baseUrl, model, apiKey, noAuth }) => {
-          try {
-            setIsLoading(true);
-            await saveOpenAIKeyWithConfig(apiKey?.trim() || '', baseUrl.trim(), model.trim(), !!noAuth);
-            setAISettings(prev => ({ ...prev, provider: 'openai', model: model.trim(), hasApiKey: true }));
-            toast.success('Configuration saved');
-            setShowOpenAIConfig(false);
-          } catch (error) {
-            toast.error(`Failed to save configuration: ${error}`);
-          } finally {
-            setIsLoading(false);
-          }
-        }}
-      />
       <OllamaConfigModal
         isOpen={showOllamaConfig}
         onClose={() => setShowOllamaConfig(false)}
         onSubmit={async ({ model, port }) => {
           try {
-            setIsLoading(true);
             // Ollama uses the OpenAI-compatible API with no auth
             const baseUrl = `http://localhost:${port}`;
             await saveOpenAIKeyWithConfig('', baseUrl, model, true);
@@ -547,8 +455,6 @@ export function EnhancementsSection() {
             setShowOllamaConfig(false);
           } catch (error) {
             toast.error(`Failed to save Ollama configuration: ${error}`);
-          } finally {
-            setIsLoading(false);
           }
         }}
       />

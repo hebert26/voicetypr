@@ -15,8 +15,6 @@ CRITICAL: Output ONLY the cleaned text. No explanations. No preamble. No "here i
 pub enum EnhancementPreset {
     Default,
     Prompts,
-    Email,
-    Commit,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,8 +48,6 @@ pub fn build_enhancement_prompt(
     let mode_transform = match options.preset {
         EnhancementPreset::Default => "",
         EnhancementPreset::Prompts => PROMPTS_TRANSFORM,
-        EnhancementPreset::Email => EMAIL_TRANSFORM,
-        EnhancementPreset::Commit => COMMIT_TRANSFORM,
     };
 
     // Build the complete prompt with custom instructions BEFORE the text for emphasis
@@ -97,20 +93,3 @@ const PROMPTS_TRANSFORM: &str = r#"Now transform the cleaned text into a concise
 - Specify output format when helpful.
 - Preserve all technical details; do not invent any.
 Return only the enhanced prompt."#;
-
-// Minimal transformation layer for Email preset
-const EMAIL_TRANSFORM: &str = r#"Now format the cleaned text as an email:
-- Subject: specific and action-oriented.
-- Greeting: Hi/Dear/Hello [Name].
-- Body: short paragraphs; lead with the key info or ask.
-- If it's a request, include action items and deadlines if present.
-- Match tone (formal/casual) to the source.
-- Closing: appropriate sign-off; use [Your Name].
-Return only the formatted email."#;
-
-// Minimal transformation layer for Commit preset
-const COMMIT_TRANSFORM: &str = r#"Now convert the cleaned text to a Conventional Commit:
-Format: type(scope): description
-Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci
-Rules: present tense, no period, ≤72 chars; add ! for breaking changes.
-Return only the commit message."#;

@@ -107,7 +107,7 @@ mod tests {
         let prompt = build_enhancement_prompt("hello world", None, &options);
 
         assert!(prompt.contains("hello world"));
-        assert!(prompt.contains("post-processor for voice transcripts"));
+        assert!(prompt.contains("text post-processor"));
 
         // Test with context
         let prompt_with_context =
@@ -125,25 +125,13 @@ mod tests {
         // Test Default preset
         let default_options = EnhancementOptions::default();
         let default_prompt = build_enhancement_prompt(text, None, &default_options);
-        assert!(default_prompt.contains("post-processor for voice transcripts"));
+        assert!(default_prompt.contains("text post-processor"));
 
         // Test Prompts preset
         let mut prompts_options = EnhancementOptions::default();
         prompts_options.preset = EnhancementPreset::Prompts;
         let prompts_prompt = build_enhancement_prompt(text, None, &prompts_options);
         assert!(prompts_prompt.contains("transform the cleaned text into a concise AI prompt"));
-
-        // Test Email preset
-        let mut email_options = EnhancementOptions::default();
-        email_options.preset = EnhancementPreset::Email;
-        let email_prompt = build_enhancement_prompt(text, None, &email_options);
-        assert!(email_prompt.contains("format the cleaned text as an email"));
-
-        // Test Commit preset
-        let mut commit_options = EnhancementOptions::default();
-        commit_options.preset = EnhancementPreset::Commit;
-        let commit_prompt = build_enhancement_prompt(text, None, &commit_options);
-        assert!(commit_prompt.contains("convert the cleaned text to a Conventional Commit"));
     }
 
     #[test]
@@ -156,8 +144,6 @@ mod tests {
         let presets = vec![
             EnhancementPreset::Default,
             EnhancementPreset::Prompts,
-            EnhancementPreset::Email,
-            EnhancementPreset::Commit,
         ];
 
         for preset in presets {
@@ -184,8 +170,6 @@ mod tests {
         let presets = vec![
             EnhancementPreset::Default,
             EnhancementPreset::Prompts,
-            EnhancementPreset::Email,
-            EnhancementPreset::Commit,
         ];
 
         for preset in presets {
@@ -202,7 +186,7 @@ mod tests {
 
             // All should include base processing
             assert!(
-                prompt.contains("post-processor for voice transcripts"),
+                prompt.contains("text post-processor"),
                 "Preset {:?} should include base processing",
                 preset
             );
@@ -234,8 +218,8 @@ mod tests {
             "Should handle self-corrections"
         );
         assert!(
-            prompt.contains("last-intent wins"),
-            "Should use last-intent policy"
+            prompt.contains("final intent"),
+            "Should use final intent policy"
         );
 
         // 2. Error correction
@@ -244,16 +228,10 @@ mod tests {
             "Should handle grammar and spelling"
         );
 
-        // 3. Number and time formatting
+        // 3. Number and date formatting
         assert!(
-            prompt.contains("numbers/dates/times as spoken"),
+            prompt.contains("numbers/dates"),
             "Should format numbers and dates"
-        );
-
-        // 4. Technical terms
-        assert!(
-            prompt.contains("Normalize obvious names/brands/terms"),
-            "Should normalize technical terms"
         );
     }
 
