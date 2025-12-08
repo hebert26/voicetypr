@@ -26,7 +26,8 @@
       "Bash(chmod:*)",
       "Bash(ls:*)",
       "Bash(lsof:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "additionalDirectories": [

@@ -65,11 +65,10 @@ export function OpenAICompatConfigModal({
     try {
       const computedNoAuth = apiKey.trim() === "";
       await invoke("test_openai_endpoint", {
-        // Standardize to snake_case for Tauri command args
-        base_url: baseUrl.trim(),
+        baseUrl: baseUrl.trim(),
         model: model.trim(),
-        api_key: computedNoAuth ? undefined : apiKey.trim(),
-        no_auth: computedNoAuth,
+        apiKey: computedNoAuth ? undefined : apiKey.trim(),
+        noAuth: computedNoAuth,
       });
       setTestResult({ ok: true, message: "Connection successful" });
     } catch (e: any) {

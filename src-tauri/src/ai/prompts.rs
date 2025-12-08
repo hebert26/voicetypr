@@ -1,20 +1,15 @@
 use serde::{Deserialize, Serialize};
 
 // 100/100 Base Prompt - deterministic last-intent processing
-const BASE_PROMPT: &str = r#"You are a post-processor for voice transcripts.
+const BASE_PROMPT: &str = r#"You are a text post-processor. Your ONLY job is to clean up transcribed speech and output the result.
 
-Resolve self-corrections and intent changes: delete the retracted part and keep only the final intended phrasing (last-intent wins).
-Tie-breakers:
-- Prefer the last explicit affirmative directive ("we will", "let's", "I'll").
-- For conflicting recipients/places/dates/numbers, keep the last stated value.
-- Remove "or/maybe" alternatives that precede a final choice.
-- If still uncertain, output the safest minimal intent without adding details.
+Rules:
+- Resolve self-corrections (keep final intent only)
+- Fix grammar, punctuation, capitalization
+- Remove fillers and false starts
+- Format numbers/dates as spoken
 
-Rewrite into clear, natural written English while preserving meaning and tone.
-Remove fillers/false starts; fix grammar, punctuation, capitalization, and spacing.
-Normalize obvious names/brands/terms when unambiguous; if uncertain, don't guess—keep generic.
-Format numbers/dates/times as spoken. Handle dictation commands only when explicitly said (e.g., "period", "new line").
-Output only the polished text."#;
+CRITICAL: Output ONLY the cleaned text. No explanations. No preamble. No "here is..." or "I have...". Just the text itself."#;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EnhancementPreset {
@@ -59,16 +54,28 @@ pub fn build_enhancement_prompt(
         EnhancementPreset::Commit => COMMIT_TRANSFORM,
     };
 
-    // Build the complete prompt
+    // Build the complete prompt with custom instructions BEFORE the text for emphasis
+    let custom_instruction_section = if let Some(instructions) = &options.custom_instructions {
+        if !instructions.trim().is_empty() {
+            log::info!("[AI Prompt] Adding custom instructions: {}", instructions.trim());
+            format!("\n\nIMPORTANT - You MUST also follow these instructions:\n{}", instructions.trim())
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    };
+
     let mut prompt = if mode_transform.is_empty() {
         // Default preset: just base processing
-        format!("{}\n\nTranscribed text:\n{}", base_prompt, text.trim())
+        format!("{}{}\n\nTranscribed text:\n{}", base_prompt, custom_instruction_section, text.trim())
     } else {
         // Other presets: base + transform
         format!(
-            "{}\n\n{}\n\nTranscribed text:\n{}",
+            "{}\n\n{}{}\n\nTranscribed text:\n{}",
             base_prompt,
             mode_transform,
+            custom_instruction_section,
             text.trim()
         )
     };
@@ -76,14 +83,6 @@ pub fn build_enhancement_prompt(
     // Add context if provided
     if let Some(ctx) = context {
         prompt.push_str(&format!("\n\nContext: {}", ctx));
-    }
-
-    // Add custom instructions if provided
-    if let Some(instructions) = &options.custom_instructions {
-        if !instructions.trim().is_empty() {
-            log::info!("[AI Prompt] Adding custom instructions: {}", instructions.trim());
-            prompt.push_str(&format!("\n\nAdditional instructions: {}", instructions.trim()));
-        }
     }
 
     log::debug!("[AI Prompt] Full prompt built:\n{}", prompt);

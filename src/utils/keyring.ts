@@ -98,7 +98,7 @@ export const loadApiKeysToCache = async (): Promise<void> => {
 
 // OpenAI-compatible configuration helpers
 export const setOpenAIConfig = async (baseUrl: string, noAuth: boolean): Promise<void> => {
-  await invoke('set_openai_config', { base_url: baseUrl, no_auth: noAuth });
+  await invoke('set_openai_config', { baseUrl, noAuth });
 };
 
 export const saveOpenAIKeyWithConfig = async (
@@ -115,11 +115,10 @@ export const saveOpenAIKeyWithConfig = async (
 
   await invoke('validate_and_cache_api_key', {
     provider,
-    // Standardize to snake_case for Tauri commands
-    api_key: apiKey || undefined,
-    base_url: baseUrl,
+    apiKey: apiKey || undefined,
+    baseUrl,
     model,
-    no_auth: noAuth || !apiKey?.trim(),
+    noAuth: noAuth || !apiKey?.trim(),
   });
 
   // Persist provider + model selection
@@ -135,7 +134,7 @@ const STT_SONIOX_KEY = 'stt_api_key_soniox';
 
 export const saveSttApiKeySoniox = async (apiKey: string): Promise<void> => {
   // Validate first; only persist to keyring on success
-  await invoke('validate_and_cache_soniox_key', { api_key: apiKey, apiKey });
+  await invoke('validate_and_cache_soniox_key', { apiKey });
   await keyringSet(STT_SONIOX_KEY, apiKey);
   await emit('stt-key-saved', { provider: 'soniox' });
 };

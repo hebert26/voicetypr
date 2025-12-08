@@ -1,6 +1,7 @@
 import { ApiKeyModal } from "@/components/ApiKeyModal";
 import { EnhancementModelCard } from "@/components/EnhancementModelCard";
 import { EnhancementSettings } from "@/components/EnhancementSettings";
+import { OllamaConfigModal } from "@/components/OllamaConfigModal";
 import { OpenAICompatConfigModal } from "@/components/OpenAICompatConfigModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
@@ -41,6 +42,7 @@ export function EnhancementsSection() {
 
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [showOpenAIConfig, setShowOpenAIConfig] = useState(false);
+  const [showOllamaConfig, setShowOllamaConfig] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [providerApiKeys, setProviderApiKeys] = useState<Record<string, boolean>>({});
@@ -55,7 +57,7 @@ export function EnhancementsSection() {
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-  // Groq, Gemini, and OpenAI-compatible
+  // Groq, Gemini, Ollama (local), and OpenAI-compatible
   const models: AIModel[] = [
     {
       id: "llama-3.1-8b-instant",
@@ -68,6 +70,12 @@ export function EnhancementsSection() {
       name: "Gemini 2.5 Flash Lite",
       provider: "gemini",
       description: "Google's lightweight flash model for quick processing"
+    },
+    {
+      id: "ollama-local",
+      name: "🦙 Ollama (Local)",
+      provider: "ollama",
+      description: "Run AI locally - no API key or internet needed"
     },
     {
       id: "openai-compatible",
@@ -304,7 +312,9 @@ export function EnhancementsSection() {
 
   const handleSetupApiKey = (provider: string) => {
     setSelectedProvider(provider);
-    if (provider === 'openai') {
+    if (provider === 'ollama') {
+      setShowOllamaConfig(true);
+    } else if (provider === 'openai') {
       setShowOpenAIConfig(true);
     } else {
       setShowApiKeyModal(true);
@@ -354,6 +364,7 @@ export function EnhancementsSection() {
     const names: Record<string, string> = {
       groq: "Groq",
       gemini: "Gemini",
+      ollama: "Ollama",
       openai: "OpenAI Compatible"
     };
     return names[provider] || provider;
@@ -408,12 +419,17 @@ export function EnhancementsSection() {
             
             <div className="grid gap-3">
               {models.map((model) => {
-                const hasKey = model.provider === 'openai'
+                // Ollama uses OpenAI provider internally, so check similar to openai
+                const hasKey = model.provider === 'openai' || model.provider === 'ollama'
                   ? (aiSettings.hasApiKey || providerApiKeys[model.provider] || false)
                   : (providerApiKeys[model.provider] || false);
-                const isSelected = model.provider === 'openai'
-                  ? (aiSettings.provider === 'openai' && hasKey)
-                  : (aiSettings.model === model.id && providerApiKeys[model.provider]);
+                // For Ollama: selected when ollama is configured and model matches
+                // For OpenAI: selected when openai provider is set and has key
+                const isSelected = model.provider === 'ollama'
+                  ? (providerApiKeys['ollama'] && aiSettings.hasApiKey)
+                  : model.provider === 'openai'
+                    ? (aiSettings.provider === 'openai' && hasKey && !providerApiKeys['ollama'])
+                    : (aiSettings.model === model.id && providerApiKeys[model.provider]);
                 return (
                   <EnhancementModelCard
                     key={model.id}
@@ -421,7 +437,20 @@ export function EnhancementsSection() {
                     hasApiKey={hasKey}
                     isSelected={isSelected}
                     onSetupApiKey={() => handleSetupApiKey(model.provider)}
-                    onSelect={() => (model.provider === 'openai' ? handleModelSelect(aiSettings.model, model.provider) : handleModelSelect(model.id, model.provider))}
+                    onSelect={() => {
+                      if (model.provider === 'ollama') {
+                        // For Ollama, open config modal if not configured, otherwise just select
+                        if (!providerApiKeys['ollama']) {
+                          handleSetupApiKey(model.provider);
+                        } else {
+                          handleModelSelect(aiSettings.model, 'openai');
+                        }
+                      } else if (model.provider === 'openai') {
+                        handleModelSelect(aiSettings.model, model.provider);
+                      } else {
+                        handleModelSelect(model.id, model.provider);
+                      }
+                    }}
                     onRemoveApiKey={() => handleRemoveApiKey(model.provider)}
                   />
                 );
@@ -489,6 +518,35 @@ export function EnhancementsSection() {
             setShowOpenAIConfig(false);
           } catch (error) {
             toast.error(`Failed to save configuration: ${error}`);
+          } finally {
+            setIsLoading(false);
+          }
+        }}
+      />
+      <OllamaConfigModal
+        isOpen={showOllamaConfig}
+        onClose={() => setShowOllamaConfig(false)}
+        onSubmit={async ({ model, port }) => {
+          try {
+            setIsLoading(true);
+            // Ollama uses the OpenAI-compatible API with no auth
+            const baseUrl = `http://localhost:${port}`;
+            await saveOpenAIKeyWithConfig('', baseUrl, model, true);
+
+            // Enable AI with the new Ollama provider/model
+            await invoke("update_ai_settings", {
+              enabled: true,
+              provider: 'openai',
+              model: model
+            });
+
+            // Mark Ollama as configured (uses openai provider under the hood)
+            setAISettings(prev => ({ ...prev, provider: 'openai', model: model, hasApiKey: true, enabled: true }));
+            setProviderApiKeys(prev => ({ ...prev, ollama: true }));
+            toast.success('Ollama configured and enabled');
+            setShowOllamaConfig(false);
+          } catch (error) {
+            toast.error(`Failed to save Ollama configuration: ${error}`);
           } finally {
             setIsLoading(false);
           }

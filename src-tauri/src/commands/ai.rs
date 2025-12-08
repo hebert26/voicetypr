@@ -50,7 +50,8 @@ pub struct AISettings {
 // Validation patterns
 lazy_static::lazy_static! {
     static ref PROVIDER_REGEX: Regex = Regex::new(r"^[a-zA-Z0-9_-]+$").unwrap();
-    static ref MODEL_REGEX: Regex = Regex::new(r"^[a-zA-Z0-9_.-]+$").unwrap();
+    // Allow : for Ollama model tags (e.g., qwen2.5:1.5b)
+    static ref MODEL_REGEX: Regex = Regex::new(r"^[a-zA-Z0-9_.:/-]+$").unwrap();
 }
 
 // Supported AI providers
