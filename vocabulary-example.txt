@@ -1,0 +1,94 @@
+# ===========================================
+# VOCABULARY CORRECTIONS
+# Copy everything below to "Vocabulary Corrections"
+# ===========================================
+
+i i → i
+the the → the
+
+llm → LLM
+api → API
+gpt → GPT
+
+fine tune → fine-tune
+
+step one → step 1
+step two → step 2
+step three → step 3
+firstly → first
+in the end → finally
+
+analyse → analyze
+optimise → optimize
+summarise → summarize
+
+prompt → prompt
+agent → agent
+embedding → embedding
+embeddings → embeddings
+transformer → transformer
+vector → vector
+context window → context window
+token → token
+create → create
+update → update
+summarise → summarise
+explain → explain
+fix → fix
+generate → generate
+rewrite → rewrite
+format → format
+extract → extract
+convert → convert
+analyse → analyse
+optimise → optimise
+complete → complete
+compare → compare
+transform → transform
+step one → step 1
+firstly → first
+in the end → finally
+the following → the following
+bullet point → bullet point
+list → list
+section → section
+
+their → their
+there → there
+they're → they’re
+your → your
+you’re → you’re
+its → its
+it’s → it’s
+then → then
+than → than
+to → to
+too → too
+two → two
+where → where
+were → were
+we’re → we’re
+
+prompt → prompt
+agent → agent
+llm → LLM
+embedding → embedding
+embeddings → embeddings
+transformer → transformer
+vector → vector
+context window → context window
+fine tune → fine-tune
+token → token
+model output → model output
+
+
+# ===========================================
+# CUSTOM INSTRUCTIONS
+# Copy everything below to "Custom Instructions"
+# ===========================================
+
+Fix any mistakes. Make sure sentences are clear and make sense.
+
+Remove filler words: um, uh, erm, you know, i mean, like, sort of, kind of, basically, right, yeah.
+
+Fix homophones: their/there/they're, your/you're, its/it's, then/than, to/too/two, where/were/we're.

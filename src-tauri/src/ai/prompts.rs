@@ -50,6 +50,32 @@ pub fn build_enhancement_prompt(
         EnhancementPreset::Prompts => PROMPTS_TRANSFORM,
     };
 
+    // Build vocabulary section if provided
+    let vocabulary_section = if !options.custom_vocabulary.is_empty() {
+        let vocab_entries: Vec<&str> = options
+            .custom_vocabulary
+            .iter()
+            .map(|s| s.as_str())
+            .filter(|s| !s.trim().is_empty())
+            .collect();
+
+        if !vocab_entries.is_empty() {
+            log::info!("[AI Prompt] Adding {} vocabulary entries", vocab_entries.len());
+            format!(
+                "\n\nVocabulary corrections (use these spellings):\n{}",
+                vocab_entries
+                    .iter()
+                    .map(|e| format!("- {}", e))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            )
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    };
+
     // Build the complete prompt with custom instructions BEFORE the text for emphasis
     let custom_instruction_section = if let Some(instructions) = &options.custom_instructions {
         if !instructions.trim().is_empty() {
@@ -64,13 +90,14 @@ pub fn build_enhancement_prompt(
 
     let mut prompt = if mode_transform.is_empty() {
         // Default preset: just base processing
-        format!("{}{}\n\nTranscribed text:\n{}", base_prompt, custom_instruction_section, text.trim())
+        format!("{}{}{}\n\nTranscribed text:\n{}", base_prompt, vocabulary_section, custom_instruction_section, text.trim())
     } else {
         // Other presets: base + transform
         format!(
-            "{}\n\n{}{}\n\nTranscribed text:\n{}",
+            "{}\n\n{}{}{}\n\nTranscribed text:\n{}",
             base_prompt,
             mode_transform,
+            vocabulary_section,
             custom_instruction_section,
             text.trim()
         )

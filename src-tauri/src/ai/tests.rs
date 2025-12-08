@@ -248,4 +248,48 @@ mod tests {
         assert!(json.contains("Test Model"));
         assert!(json.contains("A test model"));
     }
+
+    #[test]
+    fn test_vocabulary_in_prompt() {
+        use crate::ai::prompts::{build_enhancement_prompt, EnhancementOptions};
+
+        let text = "I need to write some ko";
+        let mut options = EnhancementOptions::default();
+        options.custom_vocabulary = vec![
+            "ko → code".to_string(),
+            "lama → llama".to_string(),
+        ];
+
+        let prompt = build_enhancement_prompt(text, None, &options);
+
+        // Should contain vocabulary section
+        assert!(
+            prompt.contains("Vocabulary corrections"),
+            "Prompt should contain vocabulary section"
+        );
+        assert!(
+            prompt.contains("ko → code"),
+            "Prompt should contain vocabulary entry"
+        );
+        assert!(
+            prompt.contains("lama → llama"),
+            "Prompt should contain vocabulary entry"
+        );
+    }
+
+    #[test]
+    fn test_empty_vocabulary_not_in_prompt() {
+        use crate::ai::prompts::{build_enhancement_prompt, EnhancementOptions};
+
+        let text = "hello world";
+        let options = EnhancementOptions::default();
+
+        let prompt = build_enhancement_prompt(text, None, &options);
+
+        // Should NOT contain vocabulary section when empty
+        assert!(
+            !prompt.contains("Vocabulary corrections"),
+            "Empty vocabulary should not add section to prompt"
+        );
+    }
 }
