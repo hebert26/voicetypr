@@ -41,11 +41,11 @@ VoiceTypr is an open source AI voice-to-text dictation tool, alternative to Wisp
 - Your recordings stay on your device
 - Open source for full transparency
 
-### 🤖 **AI Enhancement** (NEW)
-- Transform your transcriptions with AI (Groq/Gemini)
-- Smart presets: Prompts, Email, Commits, Notes
-- Secure API key storage
-- Requires internet connection for enhancement only
+### 🤖 **AI Enhancement with Ollama**
+- Transform your transcriptions with local AI via [Ollama](https://ollama.ai)
+- Smart presets: Default (cleanup) and Prompts (AI prompt generation)
+- **100% local** - no API keys, no internet, no data leaves your machine
+- Custom vocabulary and instructions support
 
 ### 🎨 **Clean Design**
 - Clean, user interface
@@ -107,6 +107,35 @@ VoiceTypr is an open source AI voice-to-text dictation tool, alternative to Wisp
 - 📝 **Long Recordings**: VoiceTypr handles extended recordings seamlessly but shorter recordings are recommended to do.
 - 🌍 **Multiple Languages**: Just speak - Whisper auto-detects the language
 - ⚡ **Instant Insert**: Text appears right where your cursor is
+
+### 🦙 Ollama Setup (AI Formatting)
+
+VoiceTypr uses Ollama for local AI text formatting. Install and configure with these commands:
+
+```bash
+# 1. Install Ollama (macOS)
+brew install ollama
+
+# Or download from https://ollama.ai
+
+# 2. Start Ollama server
+ollama serve
+
+# 3. Download a model (choose one)
+ollama pull qwen2.5:1.5b   # Recommended - 1GB, fast
+ollama pull qwen2.5:3b     # Better quality - 2GB
+ollama pull llama3.2:3b    # Alternative - 2GB
+ollama pull phi3:mini      # Microsoft - 2.3GB
+
+# 4. Verify model is available
+ollama list
+```
+
+**Default Configuration:**
+- Port: `11434`
+- Endpoint: `http://localhost:11434/v1/chat/completions`
+
+**Prompt Location:** The AI enhancement prompts are defined in [`src-tauri/src/ai/prompts.rs`](src-tauri/src/ai/prompts.rs)
 
 ### Project Structure
 
