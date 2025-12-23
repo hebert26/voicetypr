@@ -763,11 +763,7 @@ fn setup_logging() -> tauri_plugin_log::Builder {
         ])
         .rotation_strategy(RotationStrategy::KeepAll)
         .max_file_size(10_000_000) // 10MB per file
-        .level(if cfg!(debug_assertions) {
-            log::LevelFilter::Debug
-        } else {
-            log::LevelFilter::Info
-        })
+        .level(log::LevelFilter::Error)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

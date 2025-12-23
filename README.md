@@ -12,6 +12,11 @@ VoiceTypr runs entirely on your machine. Press a global hotkey from any app, spe
 - **Optional AI cleanup** via Ollama, OpenAI, Groq, or Gemini fixes grammar and removes filler words
 - **React 19 + TypeScript** frontend for settings and model management
 
+
+## Logs
+~/Library/Logs/com.ideaplexa.voicetypr/`
+
+
 ## Project Structure
 
 ```
