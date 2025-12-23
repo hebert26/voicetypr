@@ -4,118 +4,88 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-VoiceTypr is a native desktop app for macOS that provides offline voice transcription using Whisper. Built with Tauri v2 (Rust) and React with TypeScript.
+VoiceTypr is a native macOS/Windows desktop app for offline voice transcription. Built with Tauri v2 (Rust backend) and React 19 (TypeScript frontend).
 
-### Key Features
-- 🎙️ **Voice Recording**: System-wide hotkey triggered recording
-- 🤖 **Offline Transcription**: Uses Whisper AI models locally
-- 📝 **Auto-insert**: Transcribed text automatically inserted at cursor
-- 🎯 **Model Management**: Download and switch between Whisper models
-- ⚡ **Native Performance**: Rust backend with React frontend
-
-## Development Guidelines
-
-You are an expert AI programming assistant that primarily focuses on producing clear, readable TypeScript and Rust code for modern cross-platform desktop applications.
-
-You always use the latest versions of Tauri, Rust, React, and you are familiar with the latest features, best practices, and patterns associated with these technologies.
-
-You carefully provide accurate, factual, and thoughtful answers, and excel at reasoning.
-
-- Follow the user’s requirements carefully & to the letter.
-- Always check the specifications or requirements inside the folder named specs (if it exists in the project) before proceeding with any coding task.
-- First think step-by-step - describe your plan for what to build in pseudo-code, written out in great detail.
-- Confirm the approach with the user, then proceed to write code!
-- Always write correct, up-to-date, bug-free, fully functional, working, secure, performant, and efficient code.
-- Focus on readability over performance, unless otherwise specified.
-- Fully implement all requested functionality.
-- Leave NO todos, placeholders, or missing pieces in your code.
-- Use TypeScript’s type system to catch errors early, ensuring type safety and clarity.
-- Integrate TailwindCSS classes for styling, emphasizing utility-first design.
-- Utilize ShadCN-UI components effectively, adhering to best practices for component-driven architecture.
-- Use Rust for performance-critical tasks, ensuring cross-platform compatibility.
-- Ensure seamless integration between Tauri, Rust, and React for a smooth desktop experience.
-- Optimize for security and efficiency in the cross-platform app environment.
-- Be concise. Minimize any unnecessary prose in your explanations.
-- If there might not be a correct answer, state so. If you do not know the answer, admit it instead of guessing.
-- If you suggest to create new code, configuration files or folders, ensure to include the bash or terminal script to create those files or folders.
+**Key Features**: System-wide hotkey recording, offline Whisper transcription, auto-insert at cursor, model management (Whisper + Parakeet), AI text enhancement via Ollama/OpenAI/Groq/Gemini.
 
 ## Development Commands
 
 ```bash
-# Start development
-pnpm dev          # Frontend only (Vite dev server)
-pnpm tauri dev    # Full Tauri app development
+# Development
+pnpm tauri dev              # Full app with hot reload (recommended)
+pnpm dev                    # Frontend only (Vite dev server)
 
 # Testing
-pnpm test         # Run all frontend tests
-pnpm test:watch   # Run tests in watch mode
-cd src-tauri && cargo test  # Run backend tests
+pnpm test                   # Frontend tests (Vitest)
+pnpm test:watch             # Frontend tests in watch mode
+pnpm test -- -t "test name" # Run specific test by name
+cd src-tauri && cargo test  # Backend tests
+pnpm test:all               # Run both frontend and backend tests
 
-# Build production app
-pnpm tauri build  # Creates native .app bundle
-
-# Code quality
-pnpm lint         # Run ESLint
-pnpm typecheck    # Run TypeScript compiler
+# Build & Quality
+pnpm tauri build            # Production app bundle (.app/.dmg)
+pnpm lint                   # ESLint
+pnpm typecheck              # TypeScript compiler check
+pnpm format                 # Prettier formatting
 ```
 
 ## Architecture
 
-### Frontend (React + TypeScript)
-- **UI Components**: Pre-built shadcn/ui components in `src/components/ui/`
-- **Styling**: Tailwind CSS v4 with custom configuration
-- **State Management**: React hooks + Tauri events
-- **Error Handling**: React Error Boundaries for graceful failures
-- **Path Aliases**: `@/*` maps to `./src/*`
+### Frontend (`src/`)
+- **Framework**: React 19 + TypeScript + Tailwind CSS v4
+- **UI Components**: shadcn/ui in `src/components/ui/`
+- **State**: React Context API (`src/contexts/`) for License, Settings, Readiness, ModelManagement
+- **Hooks**: Custom hooks in `src/hooks/` for recording, permissions, models
+- **Path Alias**: `@/*` maps to `./src/*`
 
-### Backend (Rust + Tauri)
-- **Source**: `src-tauri/src/`
-- **Modules**:
-  - `audio/`: Audio recording with CoreAudio
-  - `whisper/`: Whisper model management and transcription
-  - `commands/`: Tauri command handlers
-- **Capabilities**: Define permissions in `src-tauri/capabilities/`
+### Backend (`src-tauri/src/`)
+- **Core Modules**:
+  - `audio/` - Recording via CoreAudio/CPAL, format conversion, silence detection
+  - `whisper/` - Whisper model management, transcription, caching
+  - `parakeet/` - Swift sidecar for Apple Neural Engine (macOS only)
+  - `ai/` - Enhancement providers (Ollama, OpenAI, Groq, Gemini)
+  - `commands/` - Tauri IPC handlers (86 public functions)
+  - `license/` - License validation and keychain storage
+- **State**: `AppState` in `lib.rs` manages recording state machine, hotkeys, window manager
+- **Security**: AES-GCM encryption (`secure_store.rs`), OS keychain for API keys
 
-### Testing Philosophy
+### Sidecars (`sidecar/`)
+- `parakeet-swift/` - Swift binary for Parakeet transcription (Apple Neural Engine, macOS only)
+- `ffmpeg/` - Audio format conversion binaries
 
-#### Backend Testing
-- Comprehensive unit tests for all business logic
-- Test edge cases and error conditions
-- Focus on correctness and reliability
+### Key Files
+- `src-tauri/src/lib.rs` - App initialization, tray menu, global shortcuts
+- `src-tauri/src/window_manager.rs` - Main/pill window lifecycle
+- `src-tauri/src/commands/audio.rs` - Recording and transcription flow
+- `src/components/AppContainer.tsx` - Main app layout and event coordination
 
-#### Frontend Testing
-- **User-focused**: Test what users see and do, not implementation details
-- **Integration over unit**: Test complete user journeys
-- **Key test files**:
-  - `App.critical.test.tsx`: Critical user paths
-  - `App.user.test.tsx`: Common user scenarios
-  - Component tests: Only for complex behavior
+## Testing
 
-### Current Project Status
+**Backend**: Comprehensive unit tests (160+ functions in `src-tauri/src/tests/`). Run with `cargo test`.
 
-✅ **Completed**:
-- Core recording and transcription functionality
-- Model download and management (Whisper + Parakeet)
-- **NEW**: Swift/FluidAudio Parakeet sidecar (1.2MB vs 123MB Python)
-- Settings persistence
-- Comprehensive test suite (110+ tests)
-- Error boundaries and recovery
-- Global hotkey support
+**Frontend**: User-focused integration tests. Key files:
+- `App.critical.test.tsx` - Critical user paths
+- `App.user.test.tsx` - Common user scenarios
+- Component tests only for complex behavior
 
-📝 **Recent Updates**:
-- Parakeet Swift integration complete (see `PARAKEET_SWIFT_INTEGRATION.md`)
-- Native Apple Neural Engine support for **macOS only** (see `PARAKEET_MACOS_ONLY_FIX.md`)
-- Automated sidecar build via `build.rs`
-- Parakeet V2 removed, only V3 available
-- Dynamic engine detection (whisper/parakeet)
+## Platform-Specific Notes
 
-### Common Patterns
+- **macOS**: Uses Metal GPU acceleration, CoreAudio, Parakeet Swift sidecar (Neural Engine)
+- **Windows**: Uses Vulkan GPU acceleration, Whisper models only (no Parakeet)
+- Parakeet models are filtered out on non-macOS platforms
 
-1. **Error Handling**: Always wrap risky operations in try-catch
-2. **Loading States**: Show clear feedback during async operations
-3. **Graceful Degradation**: App should work even if some features fail
-4. **Type Safety**: Use TypeScript strictly, avoid `any`
+## Common Patterns
 
-IMPORTANT: Read `agent-docs` for more details on the project before making any changes.
-IMPORTANT: Read `agent-reports` to understand whats going on
-IMPORTANT: Read `CLAUDE.local.md` for any local changes.
+1. **Tauri Commands**: Frontend calls Rust via `invoke()`, handlers in `src-tauri/src/commands/`
+2. **Events**: Backend emits events via `app.emit()`, frontend listens with `listen()`
+3. **State Transitions**: Recording uses state machine (Idle → Starting → Recording → Stopping → Transcribing)
+4. **Error Boundaries**: React ErrorBoundary wraps components for graceful failure recovery
+
+## Development Guidelines
+
+- Check `specs/` folder for requirements before coding tasks
+- Use TypeScript strictly, avoid `any`
+- Prefer editing existing files over creating new ones
+- Focus on readability over performance unless specified
+- Leave NO todos, placeholders, or missing pieces
+- Always use `pnpm` (not npm/yarn)
