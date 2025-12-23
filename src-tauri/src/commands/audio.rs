@@ -172,13 +172,8 @@ async fn resolve_engine_for_model(
 
     match engine_hint.map(|e| e.to_lowercase()) {
         Some(ref engine) if engine == "soniox" => {
-            if crate::secure_store::secure_has(app, "stt_api_key_soniox").unwrap_or(false) {
-                Ok(ActiveEngineSelection::Soniox {
-                    model_name: model_name.to_string(),
-                })
-            } else {
-                Err("Soniox token not configured. Please configure it in Models.".to_string())
-            }
+            // Cloud transcription services are disabled for offline-only operation
+            Err("Cloud transcription is disabled. Please use a local Whisper or Parakeet model.".to_string())
         }
         Some(ref engine) if engine == "parakeet" => {
             let status = parakeet_manager
@@ -215,15 +210,8 @@ async fn resolve_engine_for_model(
         Some(engine) => Err(format!("Unknown model engine '{}'.", engine)),
         None => {
             if model_name == "soniox" {
-                if crate::secure_store::secure_has(app, "stt_api_key_soniox").unwrap_or(false) {
-                    return Ok(ActiveEngineSelection::Soniox {
-                        model_name: model_name.to_string(),
-                    });
-                } else {
-                    return Err(
-                        "Soniox token not configured. Please configure it in Models.".to_string(),
-                    );
-                }
+                // Cloud transcription services are disabled for offline-only operation
+                return Err("Cloud transcription is disabled. Please use a local Whisper or Parakeet model.".to_string());
             }
             if let Some(path) = whisper_state.read().await.get_model_path(model_name) {
                 return Ok(ActiveEngineSelection::Whisper {
@@ -2115,169 +2103,14 @@ pub async fn transcribe_audio(
     Ok(text)
 }
 
-// Soniox async transcription via v1 Files + Transcriptions flow
+// Cloud transcription services have been removed for offline-only operation.
+// This function is kept as a stub to maintain code structure but always returns an error.
 async fn soniox_transcribe_async(
-    app: &AppHandle,
-    wav_path: &Path,
-    language: Option<&str>,
+    _app: &AppHandle,
+    _wav_path: &Path,
+    _language: Option<&str>,
 ) -> Result<String, String> {
-    use reqwest::multipart::{Form, Part};
-    use tokio::fs;
-
-    let key = crate::secure_store::secure_get(app, "stt_api_key_soniox")?
-        .ok_or_else(|| "Soniox API key not set".to_string())?;
-
-    let wav_bytes = fs::read(wav_path)
-        .await
-        .map_err(|e| format!("Failed to read audio file: {}", e))?;
-
-    let client = reqwest::Client::new();
-    let base = "https://api.soniox.com/v1";
-
-    // 1) Upload file -> file_id
-    let filename = wav_path
-        .file_name()
-        .and_then(|s| s.to_str())
-        .unwrap_or("audio.wav");
-    let file_part = Part::bytes(wav_bytes)
-        .file_name(filename.to_string())
-        .mime_str("audio/wav")
-        .map_err(|e| e.to_string())?;
-    let form = Form::new().part("file", file_part);
-
-    let upload_url = format!("{}/files", base);
-    let upload_resp = client
-        .post(&upload_url)
-        .bearer_auth(&key)
-        .multipart(form)
-        .send()
-        .await
-        .map_err(|e| format!("Network error (upload): {}", e))?;
-    if !upload_resp.status().is_success() {
-        let code = upload_resp.status();
-        let body = upload_resp.text().await.unwrap_or_default();
-        let snippet: String = body.chars().take(300).collect();
-        return Err(format!("Soniox upload failed: HTTP {}: {}", code, snippet));
-    }
-    let upload_json: serde_json::Value = upload_resp.json().await.map_err(|e| e.to_string())?;
-    let file_id = upload_json
-        .get("id")
-        .and_then(|v| v.as_str())
-        .ok_or("Missing file_id")?
-        .to_string();
-
-    // 2) Create transcription -> transcription_id
-    let mut payload = serde_json::json!({
-        "model": "stt-async-v3",
-        "file_id": file_id,
-    });
-    if let Some(lang) = language {
-        payload["language_hints"] = serde_json::json!([lang]);
-    }
-
-    let create_url = format!("{}/transcriptions", base);
-    let create_resp = client
-        .post(&create_url)
-        .bearer_auth(&key)
-        .header("Content-Type", "application/json")
-        .json(&payload)
-        .send()
-        .await
-        .map_err(|e| format!("Network error (create): {}", e))?;
-    if !create_resp.status().is_success() {
-        let code = create_resp.status();
-        let body = create_resp.text().await.unwrap_or_default();
-        let snippet: String = body.chars().take(300).collect();
-        return Err(format!(
-            "Soniox create transcription failed: HTTP {}: {}",
-            code, snippet
-        ));
-    }
-    let create_json: serde_json::Value = create_resp.json().await.map_err(|e| e.to_string())?;
-    let transcription_id = create_json
-        .get("id")
-        .and_then(|v| v.as_str())
-        .ok_or("Missing transcription id")?
-        .to_string();
-
-    // 3) Poll status
-    let status_url = format!("{}/transcriptions/{}", base, transcription_id);
-    let started = std::time::Instant::now();
-    let timeout = std::time::Duration::from_secs(180);
-    loop {
-        let resp = client
-            .get(&status_url)
-            .bearer_auth(&key)
-            .send()
-            .await
-            .map_err(|e| format!("Network error (status): {}", e))?;
-        if !resp.status().is_success() {
-            let code = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            let snippet: String = body.chars().take(200).collect();
-            return Err(format!("Soniox status failed: HTTP {}: {}", code, snippet));
-        }
-        let json: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
-        let status = json.get("status").and_then(|v| v.as_str()).unwrap_or("");
-        match status {
-            "completed" => break,
-            "error" => {
-                let msg = json
-                    .get("error_message")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("Job failed");
-                return Err(format!("Soniox job failed: {}", msg));
-            }
-            _ => {
-                if started.elapsed() > timeout {
-                    return Err("Soniox transcription timed out".to_string());
-                }
-                tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-            }
-        }
-    }
-
-    // 4) Fetch transcript
-    let transcript_url = format!("{}/transcriptions/{}/transcript", base, transcription_id);
-    let resp = client
-        .get(&transcript_url)
-        .bearer_auth(&key)
-        .send()
-        .await
-        .map_err(|e| format!("Network error (transcript): {}", e))?;
-    if !resp.status().is_success() {
-        let code = resp.status();
-        let body = resp.text().await.unwrap_or_default();
-        let snippet: String = body.chars().take(200).collect();
-        return Err(format!(
-            "Soniox transcript failed: HTTP {}: {}",
-            code, snippet
-        ));
-    }
-    let json: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
-
-    // Prefer direct text if present, else join tokens
-    if let Some(text) = json.get("text").and_then(|v| v.as_str()) {
-        return Ok(text.to_string());
-    }
-    if let Some(tokens) = json.get("tokens").and_then(|v| v.as_array()) {
-        let mut out = String::new();
-        let mut first = true;
-        for t in tokens {
-            if let Some(txt) = t.get("text").and_then(|v| v.as_str()) {
-                if !first {
-                    out.push(' ');
-                } else {
-                    first = false;
-                }
-                out.push_str(txt);
-            }
-        }
-        if !out.is_empty() {
-            return Ok(out);
-        }
-    }
-    Err("Soniox transcript format not recognized".to_string())
+    Err("Cloud transcription is disabled. Please use a local Whisper or Parakeet model.".to_string())
 }
 
 #[tauri::command]

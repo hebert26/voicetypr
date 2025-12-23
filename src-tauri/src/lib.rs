@@ -763,7 +763,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
             autostart
         })
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init());
 
     // Add NSPanel plugin on macOS

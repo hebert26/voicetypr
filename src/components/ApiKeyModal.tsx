@@ -57,16 +57,9 @@ export function ApiKeyModal({
   }, [isOpen]);
 
   const getProviderUrl = () => {
-    switch (providerName.toLowerCase()) {
-      case 'groq':
-        return 'https://console.groq.com/keys';
-      case 'gemini':
-        return 'https://aistudio.google.com/apikey';
-      case 'soniox':
-        return 'https://soniox.com/docs/stt/get-started';
-      default:
-        return '';
-    }
+    // Remote API documentation links removed for offline-only operation
+    // Only local providers (Ollama) are supported
+    return '';
   };
 
   const providerUrl = docsUrl ?? getProviderUrl();

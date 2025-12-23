@@ -16,7 +16,6 @@ export function EnhancementSettings({ settings, onSettingsChange, disabled = fal
   const presets = [
     {
       id: "Default",
-      label: "Default",
       icon: FileText,
       description: "Clean text"
     },

@@ -29,7 +29,14 @@
       "Bash(xargs:*)",
       "Bash(curl:*)",
       "Bash(bash:*)",
-      "Bash(/bin/bash:*)"
+      "Bash(/bin/bash:*)",
+      "Bash(log show:*)",
+      "Bash(timeout 15 pnpm tauri dev:*)",
+      "Bash(./scripts/build-release.sh:*)",
+      "Bash(python3:*)",
+      "Bash(node -e:*)",
+      "Bash(/Users/hebertg/iOSDev/voicetypr/scripts/build-release.sh:*)",
+      "Bash(pnpm tauri build:*)"
     ],
     "deny": [],
     "additionalDirectories": [

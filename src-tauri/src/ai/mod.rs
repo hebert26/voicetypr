@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod config;
-pub mod gemini;
-pub mod groq;
 pub mod openai;
 pub mod prompts;
 
@@ -100,22 +98,13 @@ pub struct AIProviderFactory;
 
 impl AIProviderFactory {
     pub fn create(config: &AIProviderConfig) -> Result<Box<dyn AIProvider>, AIError> {
-        // Validate provider name
+        // Validate provider name - only local OpenAI-compatible (Ollama) is supported
         if !Self::is_valid_provider(&config.provider) {
             return Err(AIError::ProviderNotFound(config.provider.clone()));
         }
 
         match config.provider.as_str() {
-            "groq" => Ok(Box::new(groq::GroqProvider::new(
-                config.api_key.clone(),
-                config.model.clone(),
-                config.options.clone(),
-            )?)),
-            "gemini" => Ok(Box::new(gemini::GeminiProvider::new(
-                config.api_key.clone(),
-                config.model.clone(),
-                config.options.clone(),
-            )?)),
+            // Only OpenAI-compatible local providers (Ollama) are supported
             "openai" => Ok(Box::new(openai::OpenAIProvider::new(
                 config.api_key.clone(),
                 config.model.clone(),
@@ -126,6 +115,7 @@ impl AIProviderFactory {
     }
 
     fn is_valid_provider(provider: &str) -> bool {
-        matches!(provider, "groq" | "gemini" | "openai")
+        // Only local OpenAI-compatible provider (used by Ollama) is supported
+        matches!(provider, "openai")
     }
 }

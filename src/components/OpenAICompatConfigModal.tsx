@@ -23,7 +23,7 @@ interface OpenAICompatConfigModalProps {
 
 export function OpenAICompatConfigModal({
   isOpen,
-  defaultBaseUrl = "https://api.openai.com",
+  defaultBaseUrl = "",
   defaultModel = "",
   onClose,
   onSubmit,
@@ -83,9 +83,9 @@ export function OpenAICompatConfigModal({
       <DialogContent className="sm:max-w-[520px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Configure OpenAI-Compatible Provider</DialogTitle>
+            <DialogTitle>Configure Local AI Provider</DialogTitle>
             <DialogDescription>
-              Set the API base URL, model ID, and optional API key for any OpenAI-compatible endpoint.
+              Configure a local OpenAI-compatible endpoint (e.g., Ollama). Only localhost connections are allowed.
             </DialogDescription>
           </DialogHeader>
 
@@ -94,12 +94,12 @@ export function OpenAICompatConfigModal({
               <Label htmlFor="baseUrl">API Base URL</Label>
               <Input
                 id="baseUrl"
-                placeholder="https://api.openai.com"
+                placeholder="http://localhost:PORT"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Examples: https://api.openai.com, http://localhost:11434
+                Only localhost/127.0.0.1 connections are allowed
               </p>
             </div>
 

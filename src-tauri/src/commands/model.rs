@@ -1,6 +1,5 @@
 use crate::emit_to_all;
 use crate::parakeet::{ParakeetManager, ParakeetModelStatus};
-use crate::secure_store;
 use crate::utils::onboarding_logger;
 #[cfg(debug_assertions)]
 use crate::utils::system_monitor;
@@ -529,30 +528,10 @@ fn convert_parakeet_model(status: ParakeetModelStatus) -> UnifiedModelInfo {
     }
 }
 
-fn collect_cloud_models(app: &AppHandle) -> Vec<UnifiedModelInfo> {
-    const STT_API_KEY_SONIOX: &str = "stt_api_key_soniox";
-    let has_soniox_key = secure_store::secure_has(app, STT_API_KEY_SONIOX).unwrap_or_else(|err| {
-        log::warn!(
-            "[GET_MODEL_STATUS] Failed to check Soniox key presence: {}",
-            err
-        );
-        false
-    });
-
-    vec![UnifiedModelInfo {
-        name: "soniox".to_string(),
-        display_name: "Soniox (Cloud)".to_string(),
-        size: 0,
-        url: String::new(),
-        sha256: String::new(),
-        downloaded: has_soniox_key,
-        speed_score: 9,
-        accuracy_score: 10,
-        recommended: true,
-        engine: "soniox".to_string(),
-        kind: "cloud".to_string(),
-        requires_setup: !has_soniox_key,
-    }]
+fn collect_cloud_models(_app: &AppHandle) -> Vec<UnifiedModelInfo> {
+    // Cloud models have been removed for offline-only operation
+    // All transcription uses local Whisper or Parakeet models
+    vec![]
 }
 
 #[tauri::command]

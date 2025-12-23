@@ -12,7 +12,7 @@ interface AIModel {
 
 interface OllamaConfig {
   model: string;
-  port: number;
+  port?: number;
 }
 
 interface EnhancementModelCardProps {
@@ -47,12 +47,9 @@ export function EnhancementModelCard({
 
   // For Ollama, show actual configured model and port if available
   const isOllama = model.provider === "ollama";
-  const displayName =
-    isOllama && ollamaConfig?.model ? `🦙 ${ollamaConfig.model}` : model.name;
-  const displayProvider =
-    isOllama && ollamaConfig?.model
-      ? `localhost:${ollamaConfig.port}`
-      : provider.name;
+  const ollamaConfigured = isOllama && hasApiKey && ollamaConfig?.model && ollamaConfig?.port;
+  const displayName = ollamaConfigured ? `🦙 ${ollamaConfig.model}` : model.name;
+  const apiUrl = ollamaConfigured ? `http://localhost:${ollamaConfig.port}` : null;
 
   return (
     <Card
@@ -65,12 +62,30 @@ export function EnhancementModelCard({
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             <h3 className="font-medium">{displayName}</h3>
-            <span
-              className={`text-xs font-medium ${isOllama ? "text-amber-600" : provider.color}`}
-            >
-              {displayProvider}
-            </span>
+            {!ollamaConfigured && (
+              <span
+                className={`text-xs font-medium ${isOllama ? "text-amber-600" : provider.color}`}
+              >
+                {isOllama ? "ollama" : provider.name}
+              </span>
+            )}
           </div>
+          {ollamaConfigured && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span>
+                <span className="text-foreground/60">Model:</span>{" "}
+                <span className="font-medium text-foreground">{ollamaConfig.model}</span>
+              </span>
+              <span>
+                <span className="text-foreground/60">URL:</span>{" "}
+                <span className="font-mono text-foreground">{apiUrl}</span>
+              </span>
+              <span>
+                <span className="text-foreground/60">Port:</span>{" "}
+                <span className="font-mono text-foreground">{ollamaConfig.port}</span>
+              </span>
+            </div>
+          )}
         </div>
 
         {hasApiKey ? (

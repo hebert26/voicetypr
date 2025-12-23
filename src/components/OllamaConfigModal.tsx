@@ -10,7 +10,7 @@ import {
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Loader2, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 
 interface OllamaConfigModalProps {
@@ -24,12 +24,12 @@ interface OllamaConfigModalProps {
 export function OllamaConfigModal({
   isOpen,
   defaultModel = "",
-  defaultPort = 11434,
+  defaultPort,
   onClose,
   onSubmit,
 }: OllamaConfigModalProps) {
   const [model, setModel] = useState(defaultModel);
-  const [port, setPort] = useState(defaultPort.toString());
+  const [port, setPort] = useState(defaultPort?.toString() ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<null | {
@@ -45,7 +45,7 @@ export function OllamaConfigModal({
     if (isOpen) {
       // When opening, load the saved values from props
       setModel(defaultModel);
-      setPort(defaultPort.toString());
+      setPort(defaultPort?.toString() ?? "");
       setOllamaDetected("unknown");
       setTestResult(null);
     } else {
@@ -59,9 +59,9 @@ export function OllamaConfigModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!model.trim()) return;
+    if (!model.trim() || !port.trim()) return;
 
-    const portNum = parseInt(port) || 11434;
+    const portNum = parseInt(port);
     try {
       setSubmitting(true);
       onSubmit({ model: model.trim(), port: portNum });
@@ -73,7 +73,7 @@ export function OllamaConfigModal({
   const handleTest = async () => {
     setTestResult(null);
     setTesting(true);
-    const portNum = parseInt(port) || 11434;
+    const portNum = parseInt(port);
 
     try {
       await invoke("test_openai_endpoint", {
@@ -174,7 +174,7 @@ export function OllamaConfigModal({
               <Input
                 id="ollamaPort"
                 type="number"
-                placeholder="11434"
+                placeholder="Port number"
                 value={port}
                 onChange={(e) => {
                   setPort(e.target.value);
@@ -182,9 +182,6 @@ export function OllamaConfigModal({
                 }}
                 className="w-24"
               />
-              <span className="text-xs text-muted-foreground">
-                (default: 11434)
-              </span>
             </div>
 
             {/* Setup Instructions - only show if connection failed */}
@@ -193,15 +190,7 @@ export function OllamaConfigModal({
                 <p className="text-sm font-medium">Quick Setup</p>
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>
-                    Install Ollama from{" "}
-                    <a
-                      href="https://ollama.ai"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-amber-600 hover:underline inline-flex items-center gap-0.5"
-                    >
-                      ollama.ai <ExternalLink className="h-3 w-3" />
-                    </a>
+                    Install Ollama (local AI runtime)
                   </li>
                   <li>
                     Open Terminal and run:{" "}
@@ -235,7 +224,7 @@ export function OllamaConfigModal({
               type="button"
               variant="outline"
               onClick={handleTest}
-              disabled={!model.trim() || submitting || testing}
+              disabled={!model.trim() || !port.trim() || submitting || testing}
             >
               {testing ? (
                 <>
@@ -246,7 +235,7 @@ export function OllamaConfigModal({
                 "Test Connection"
               )}
             </Button>
-            <Button type="submit" disabled={!model.trim() || submitting}>
+            <Button type="submit" disabled={!model.trim() || !port.trim() || submitting}>
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-1" />

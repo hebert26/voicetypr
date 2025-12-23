@@ -1,12 +1,9 @@
-import {
-  hasSttApiKeySoniox,
-  removeSttApiKeySoniox,
-  saveSttApiKeySoniox,
-} from '@/utils/keyring';
+// Cloud providers have been removed for offline-only operation.
+// All transcription uses local Whisper or Parakeet models.
 
 export interface CloudProviderDefinition {
   id: string;
-  engine: 'soniox';
+  engine: string;
   modelName: string;
   displayName: string;
   description: string;
@@ -18,27 +15,8 @@ export interface CloudProviderDefinition {
   setupCta?: string;
 }
 
-const sonioxProvider: CloudProviderDefinition = {
-  id: 'soniox',
-  engine: 'soniox',
-  modelName: 'soniox',
-  displayName: 'Soniox (Cloud)',
-  description: 'High-accuracy streaming transcription via Soniox cloud APIs',
-  providerName: 'Soniox',
-  addKey: async (key: string) => {
-    await saveSttApiKeySoniox(key.trim());
-  },
-  removeKey: async () => {
-    await removeSttApiKeySoniox();
-  },
-  hasKey: async () => hasSttApiKeySoniox(),
-  docsUrl: 'https://soniox.com/docs/stt/get-started',
-  setupCta: 'Add API Key',
-};
+// No cloud providers available - app operates fully offline
+export const CLOUD_PROVIDERS: Record<string, CloudProviderDefinition> = {};
 
-export const CLOUD_PROVIDERS: Record<string, CloudProviderDefinition> = {
-  [sonioxProvider.id]: sonioxProvider,
-};
-
-export const getCloudProviderByModel = (modelName: string): CloudProviderDefinition | undefined =>
-  CLOUD_PROVIDERS[modelName];
+export const getCloudProviderByModel = (_modelName: string): CloudProviderDefinition | undefined =>
+  undefined;

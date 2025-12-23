@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   SidebarContent,
   SidebarFooter,
@@ -47,7 +46,6 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
 
   // Show license status for all states (not just trial)
   const showLicenseInfo = !isLoading && status;
-  const daysLeft = status?.trial_days_left || -1;
 
   return (
     <SidebarPrimitive >
@@ -144,49 +142,13 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
       <SidebarFooter className="border-t border-border/40 p-3">
         {showLicenseInfo && (
           <div className="space-y-2">
-            {status.status === "licensed" ? (
-              <div className="flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-green-500/10">
-                <VerifiedIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                  Pro Licensed
-                </span>
-              </div>
-            ) : (
-              <>
-                <div className={cn(
-                  "px-2 py-1.5 rounded-md text-center",
-                  status.status === "trial" && daysLeft > 0
-                )}>
-                  <span className={cn(
-                    "text-xs font-medium",
-                    (status.status === "expired" || status.status === "none" || (status.status === "trial" && daysLeft <= 0)) && "text-amber-600"
-                  )}>
-                    {status.status === "trial"
-                      ? daysLeft > 0
-                        ? `${daysLeft} days left in trial`
-                        : daysLeft === 0
-                          ? "Trial expires today"
-                          : "Trial expired"
-                      : status.status === "expired" || status.status === "none"
-                        ? "Trial Expired"
-                        : "No License"}
-                  </span>
-                </div>
-                <Button
-                  asChild
-                  className="w-full text-sm"
-                  size="sm"
-                >
-                  <a
-                    href="https://voicetypr.com/#pricing"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Upgrade to Pro
-                  </a>
-                </Button>
-              </>
-            )}
+            {/* Offline mode - always shows licensed status */}
+            <div className="flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-green-500/10">
+              <VerifiedIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                Offline Mode
+              </span>
+            </div>
           </div>
         )}
       </SidebarFooter>

@@ -33,6 +33,18 @@ interface AISettings {
   hasApiKey: boolean;
 }
 
+type OpenAIConfig = {
+  baseUrl?: string;
+  base_url?: string;
+  noAuth?: boolean;
+  no_auth?: boolean;
+};
+
+const normalizeOpenAIConfig = (config: OpenAIConfig) => ({
+  baseUrl: config.baseUrl ?? config.base_url ?? "",
+  noAuth: config.noAuth ?? config.no_auth ?? false,
+});
+
 export function EnhancementsSection() {
   const readiness = useReadinessState();
 
@@ -46,8 +58,8 @@ export function EnhancementsSection() {
   const [showOllamaConfig, setShowOllamaConfig] = useState(false);
   const [ollamaConfig, setOllamaConfig] = useState<{
     model: string;
-    port: number;
-  }>({ model: "", port: 11434 });
+    port: number | undefined;
+  }>({ model: "", port: undefined });
   const [providerApiKeys, setProviderApiKeys] = useState<
     Record<string, boolean>
   >({});
@@ -187,12 +199,11 @@ export function EnhancementsSection() {
   // Load saved Ollama config (base_url contains port, model from aiSettings)
   const loadOllamaConfig = useCallback(async () => {
     try {
-      const config = await invoke<{ base_url: string; no_auth: boolean }>(
-        "get_openai_config",
-      );
+      const config = await invoke<OpenAIConfig>("get_openai_config");
+      const { baseUrl } = normalizeOpenAIConfig(config);
       // Parse port from URL like "http://localhost:12434"
-      const urlMatch = config.base_url.match(/:(\d+)$/);
-      const port = urlMatch ? parseInt(urlMatch[1]) : 11434;
+      const urlMatch = baseUrl.match(/:(\d+)$/);
+      const port = urlMatch ? parseInt(urlMatch[1]) : undefined;
 
       // Also get the current model from AI settings
       const currentSettings = await invoke<AISettings>("get_ai_settings");
@@ -215,12 +226,12 @@ export function EnhancementsSection() {
     }
   }, [settingsLoaded, loadAISettings]);
 
-  // Load Ollama config when aiSettings.model changes
+  // Load Ollama config on initial load and when aiSettings.model changes
   useEffect(() => {
     if (settingsLoaded) {
       loadOllamaConfig();
     }
-  }, [settingsLoaded, aiSettings.model, loadOllamaConfig]);
+  }, [settingsLoaded, loadOllamaConfig]);
 
   // Listen for AI readiness changes from backend
   useEffect(() => {
@@ -356,14 +367,13 @@ export function EnhancementsSection() {
   const handleSetupApiKey = async () => {
     // Load fresh config before opening modal
     try {
-      const config = await invoke<{ base_url: string; no_auth: boolean }>(
-        "get_openai_config",
-      );
+      const config = await invoke<OpenAIConfig>("get_openai_config");
+      const { baseUrl } = normalizeOpenAIConfig(config);
       const currentSettings = await invoke<AISettings>("get_ai_settings");
 
       // Parse port from URL like "http://localhost:12434"
-      const urlMatch = config.base_url.match(/:(\d+)$/);
-      const port = urlMatch ? parseInt(urlMatch[1]) : 11434;
+      const urlMatch = baseUrl.match(/:(\d+)$/);
+      const port = urlMatch ? parseInt(urlMatch[1]) : undefined;
 
       // Update state first
       setOllamaConfig({
@@ -510,7 +520,12 @@ export function EnhancementsSection() {
                     hasApiKey={hasKey}
                     isSelected={isSelected}
                     ollamaConfig={
-                      model.provider === "ollama" ? ollamaConfig : undefined
+                      model.provider === "ollama"
+                        ? {
+                            model: ollamaConfig.model || aiSettings.model,
+                            port: ollamaConfig.port,
+                          }
+                        : undefined
                     }
                     onSetupApiKey={handleSetupApiKey}
                     onSelect={() => {
@@ -552,15 +567,7 @@ export function EnhancementsSection() {
                   <h3 className="font-medium text-sm">Quick Setup</h3>
                   <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
                     <li>
-                      Install Ollama from{" "}
-                      <a
-                        href="https://ollama.ai"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-amber-600 hover:underline"
-                      >
-                        ollama.ai
-                      </a>
+                      Install Ollama (local AI runtime)
                     </li>
                     <li>
                       Pull a model:{" "}
@@ -609,6 +616,8 @@ export function EnhancementsSection() {
               enabled: true,
             }));
             setProviderApiKeys((prev) => ({ ...prev, ollama: true }));
+            // Update ollamaConfig state immediately so UI reflects the new port
+            setOllamaConfig({ model, port });
             toast.success("Ollama configured and enabled");
             setShowOllamaConfig(false);
           } catch (error) {

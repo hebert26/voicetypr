@@ -32,7 +32,7 @@
         "style-src": "'self' 'unsafe-inline'",
         "img-src": "'self' asset: data:",
         "font-src": "'self'",
-        "connect-src": "'self' ipc: https://github.com https://huggingface.co asset:",
+        "connect-src": "'self' ipc: https://huggingface.co asset:",
         "media-src": "'self'"
       }
     }
@@ -68,14 +68,5 @@
       }
     }
   },
-  "plugins": {
-    "updater": {
-      "active": false,
-      "dialog": true,
-      "endpoints": [
-        "https://github.com/moinulmoin/voicetypr/releases/latest/download/latest.json"
-      ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE2Q0M5NTZENjAwM0YyNDkKUldSSjhnTmdiWlhNRm0wdHQ1YmxNSzBWS2tiZlcyZ3FJZG5FajZ3MFBzTUZmRDgvZys5R1J6c2cK"
-    }
-  }
+  "plugins": {}
 }

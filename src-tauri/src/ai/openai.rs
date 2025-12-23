@@ -22,19 +22,17 @@ impl OpenAIProvider {
     ) -> Result<Self, AIError> {
         // Do not restrict model IDs; accept any OpenAI-compatible model string
 
-        // Determine if auth is required
+        // For offline-only mode, auth is never required (local Ollama)
         let no_auth = options
             .get("no_auth")
             .and_then(|v| v.as_bool())
-            .unwrap_or(false);
+            .unwrap_or(true); // Default to no auth for local usage
 
-        // Validate API key format (basic check) only if auth is required
-        if !no_auth {
-            if api_key.trim().is_empty() || api_key.len() < MIN_API_KEY_LENGTH {
-                return Err(AIError::ValidationError(
-                    "Invalid API key format".to_string(),
-                ));
-            }
+        // Skip API key validation for local providers
+        if !no_auth && (api_key.trim().is_empty() || api_key.len() < MIN_API_KEY_LENGTH) {
+            return Err(AIError::ValidationError(
+                "Invalid API key format".to_string(),
+            ));
         }
 
         let client = Client::builder()
@@ -42,11 +40,22 @@ impl OpenAIProvider {
             .build()
             .map_err(|e| AIError::NetworkError(format!("Failed to create HTTP client: {}", e)))?;
 
-        // Resolve base URL: always map base to /v1/chat/completions
+        // Resolve base URL - ONLY localhost is allowed for offline-only mode
         let base_root = options
             .get("base_url")
             .and_then(|v| v.as_str())
-            .unwrap_or("https://api.openai.com");
+            .ok_or_else(|| AIError::ValidationError(
+                "Base URL is required. Please configure Ollama in Settings.".to_string()
+            ))?;
+
+        // Enforce localhost-only connections
+        let base_lower = base_root.to_lowercase();
+        if !base_lower.contains("localhost") && !base_lower.contains("127.0.0.1") {
+            return Err(AIError::ValidationError(
+                "Only local connections (localhost/127.0.0.1) are allowed. Remote APIs are disabled.".to_string(),
+            ));
+        }
+
         let base_trim = base_root.trim_end_matches('/');
         let base_url = format!("{}/v1/chat/completions", base_trim);
 
@@ -55,6 +64,9 @@ impl OpenAIProvider {
             "base_url".into(),
             serde_json::Value::String(base_root.to_string()),
         );
+
+        // Force no_auth for local connections
+        options.insert("no_auth".into(), serde_json::Value::Bool(true));
 
         Ok(Self {
             api_key,
@@ -176,10 +188,7 @@ impl AIProvider for OpenAIProvider {
         request.validate()?;
 
         // Log what options we received
-        log::info!(
-            "[OpenAIProvider] Request options: {:?}",
-            request.options
-        );
+        log::info!("[OpenAIProvider] Request options: {:?}", request.options);
 
         let prompt = prompts::build_enhancement_prompt(
             &request.text,

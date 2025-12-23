@@ -212,9 +212,17 @@ pub async fn validate_and_cache_api_key(
     }
 
     if provider == "openai" {
-        let base = base_url
-            .clone()
-            .unwrap_or_else(|| "https://api.openai.com".to_string());
+        // Only localhost connections are allowed for offline-only operation
+        let base = base_url.clone().ok_or_else(|| {
+            "Base URL is required for OpenAI-compatible providers".to_string()
+        })?;
+
+        // Enforce localhost-only connections
+        let base_lower = base.to_lowercase();
+        if !base_lower.contains("localhost") && !base_lower.contains("127.0.0.1") {
+            return Err("Only local connections (localhost/127.0.0.1) are allowed. Remote APIs are disabled.".to_string());
+        }
+
         let validate_url = normalize_chat_completions_url(&base);
 
         let client = reqwest::Client::new();
@@ -537,10 +545,11 @@ pub async fn enhance_transcription(text: String, app: tauri::AppHandle) -> Resul
 
     // Determine provider-specific config
     let (api_key, options) = if provider == "openai" {
+        // Only localhost connections are allowed for offline-only operation
         let base_url = store
             .get("ai_openai_base_url")
             .and_then(|v| v.as_str().map(|s| s.to_string()))
-            .unwrap_or_else(|| "https://api.openai.com".to_string());
+            .ok_or_else(|| "Ollama not configured. Please configure Ollama in Settings > Formatting.".to_string())?;
         let no_auth = store
             .get("ai_openai_no_auth")
             .and_then(|v| v.as_bool())
@@ -673,10 +682,11 @@ pub async fn set_openai_config(
 #[tauri::command]
 pub async fn get_openai_config(app: tauri::AppHandle) -> Result<OpenAIConfig, String> {
     let store = app.store("settings").map_err(|e| e.to_string())?;
+    // Return stored config or empty string (frontend handles defaults)
     let base_url = store
         .get("ai_openai_base_url")
         .and_then(|v| v.as_str().map(|s| s.to_string()))
-        .unwrap_or_else(|| "https://api.openai.com".to_string());
+        .unwrap_or_default();
     let no_auth = store
         .get("ai_openai_no_auth")
         .and_then(|v| v.as_bool())

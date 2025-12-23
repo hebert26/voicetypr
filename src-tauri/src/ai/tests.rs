@@ -60,9 +60,12 @@ mod tests {
 
     #[test]
     fn test_ai_provider_config_serialization() {
+        let test_provider = "openai";
+        let test_model = "test-model";
+
         let config = AIProviderConfig {
-            provider: "groq".to_string(),
-            model: "llama-3.3-70b-versatile".to_string(),
+            provider: test_provider.to_string(),
+            model: test_model.to_string(),
             api_key: "secret_key".to_string(),
             enabled: true,
             options: HashMap::new(),
@@ -71,8 +74,8 @@ mod tests {
         // API key should not be serialized
         let serialized = serde_json::to_string(&config).unwrap();
         assert!(!serialized.contains("secret_key"));
-        assert!(serialized.contains("groq"));
-        assert!(serialized.contains("llama-3.3-70b-versatile"));
+        assert!(serialized.contains(test_provider));
+        assert!(serialized.contains(test_model));
     }
 
     #[test]
@@ -141,10 +144,7 @@ mod tests {
         let test_text = "send it to john... to mary";
 
         // Test that ALL presets include self-correction rules
-        let presets = vec![
-            EnhancementPreset::Default,
-            EnhancementPreset::Prompts,
-        ];
+        let presets = vec![EnhancementPreset::Default, EnhancementPreset::Prompts];
 
         for preset in presets {
             let mut options = EnhancementOptions::default();
@@ -167,10 +167,7 @@ mod tests {
         let test_text = "test";
 
         // Test that all presets include base processing
-        let presets = vec![
-            EnhancementPreset::Default,
-            EnhancementPreset::Prompts,
-        ];
+        let presets = vec![EnhancementPreset::Default, EnhancementPreset::Prompts];
 
         for preset in presets {
             let mut options = EnhancementOptions::default();
@@ -255,10 +252,7 @@ mod tests {
 
         let text = "I need to write some ko";
         let mut options = EnhancementOptions::default();
-        options.custom_vocabulary = vec![
-            "ko → code".to_string(),
-            "lama → llama".to_string(),
-        ];
+        options.custom_vocabulary = vec!["ko → code".to_string(), "lama → llama".to_string()];
 
         let prompt = build_enhancement_prompt(text, None, &options);
 

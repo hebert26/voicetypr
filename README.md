@@ -2,6 +2,8 @@ ai/gemma3:latest
 12434
  
 
+ ./scripts/build-release.sh
+
 ## What is VoiceTypr?
 
 VoiceTypr is an open source AI voice-to-text dictation tool, alternative to Wispr Flow and SuperWhisper. Available for macOS and Windows.

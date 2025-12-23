@@ -24,12 +24,11 @@ describe('ApiKeyModal', () => {
     expect(screen.queryByText('Add Groq API Key')).not.toBeInTheDocument();
   });
 
-  it('shows provider-specific link for Groq', () => {
+  it('does not show provider-specific link (offline mode)', () => {
     render(<ApiKeyModal {...defaultProps} />);
-    
-    const link = screen.getByText('Get your Groq API key');
-    expect(link).toBeInTheDocument();
-    expect(link.closest('a')).toHaveAttribute('href', 'https://console.groq.com/keys');
+
+    // Remote API links are disabled for offline-only operation
+    expect(screen.queryByText('Get your Groq API key')).not.toBeInTheDocument();
   });
 
   it('calls onSubmit with API key', async () => {
