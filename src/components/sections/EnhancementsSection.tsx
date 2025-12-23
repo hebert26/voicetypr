@@ -197,15 +197,6 @@ export function EnhancementsSection() {
       // Also get the current model from AI settings
       const currentSettings = await invoke<AISettings>("get_ai_settings");
 
-      console.log(
-        "[loadOllamaConfig] base_url:",
-        config.base_url,
-        "port:",
-        port,
-        "model:",
-        currentSettings.model,
-      );
-
       setOllamaConfig({
         model: currentSettings.model || "",
         port,
@@ -364,8 +355,30 @@ export function EnhancementsSection() {
 
   const handleSetupApiKey = async () => {
     // Load fresh config before opening modal
-    await loadOllamaConfig();
-    setShowOllamaConfig(true);
+    try {
+      const config = await invoke<{ base_url: string; no_auth: boolean }>(
+        "get_openai_config",
+      );
+      const currentSettings = await invoke<AISettings>("get_ai_settings");
+
+      // Parse port from URL like "http://localhost:12434"
+      const urlMatch = config.base_url.match(/:(\d+)$/);
+      const port = urlMatch ? parseInt(urlMatch[1]) : 11434;
+
+      // Update state first
+      setOllamaConfig({
+        model: currentSettings.model || "",
+        port,
+      });
+
+      // Small delay to ensure state is updated before modal opens
+      setTimeout(() => {
+        setShowOllamaConfig(true);
+      }, 10);
+    } catch (e) {
+      console.error("Failed to load Ollama config:", e);
+      setShowOllamaConfig(true); // Still open modal with defaults
+    }
   };
 
   const handleModelSelect = async (modelId: string, provider: string) => {
@@ -496,6 +509,9 @@ export function EnhancementsSection() {
                     model={model}
                     hasApiKey={hasKey}
                     isSelected={isSelected}
+                    ollamaConfig={
+                      model.provider === "ollama" ? ollamaConfig : undefined
+                    }
                     onSetupApiKey={handleSetupApiKey}
                     onSelect={() => {
                       // For Ollama, open config modal if not configured, otherwise just select

@@ -21,14 +21,6 @@ interface OllamaConfigModalProps {
   onSubmit: (config: { model: string; port: number }) => void;
 }
 
-// Suggested models - user can also type any model name manually
-const SUGGESTED_MODELS = [
-  { id: "qwen2.5:3b", name: "Qwen 2.5 3B", size: "2GB" },
-  { id: "qwen2.5:1.5b", name: "Qwen 2.5 1.5B", size: "1GB" },
-  { id: "llama3.2:3b", name: "Llama 3.2 3B", size: "2GB" },
-  { id: "phi3:mini", name: "Phi-3 Mini", size: "2.3GB" },
-];
-
 export function OllamaConfigModal({
   isOpen,
   defaultModel = "",
@@ -119,11 +111,6 @@ export function OllamaConfigModal({
     }
   };
 
-  const handleModelSuggestionClick = (modelId: string) => {
-    setModel(modelId);
-    setTestResult(null);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[420px]">
@@ -177,24 +164,6 @@ export function OllamaConfigModal({
                   setTestResult(null);
                 }}
               />
-            </div>
-
-            {/* Model Suggestions - compact inline buttons */}
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTED_MODELS.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => handleModelSuggestionClick(m.id)}
-                  className={`px-2 py-1 text-xs rounded-md border transition-colors ${
-                    model === m.id
-                      ? "border-amber-500 bg-amber-500/10 text-amber-600"
-                      : "border-border/50 hover:border-border hover:bg-accent/50"
-                  }`}
-                >
-                  {m.name} ({m.size})
-                </button>
-              ))}
             </div>
 
             {/* Port Input - compact inline */}
