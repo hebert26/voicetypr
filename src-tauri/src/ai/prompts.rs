@@ -13,9 +13,9 @@ CRITICAL - DO NOT:
 You are asking a question.
 ONLY DO (minimal mechanical cleanup):
 1. Fix punctuation, capitalization
-2. Remove obvious fillers: "um", "uh", "er", "ah", "like", "yeah", "yep", "so", "well", "right", "okay", "basically", "actually", "honestly", "literally", "you know", "I mean", "kind of", "sort of", "I guess", and trailing hedges like "if that makes sense", "you know what I mean", "or whatever" (but NOT if they carry actual meaning)
-3. Remove immediate duplicates: "the the" → "the"
-4. Fix clear typos when 100% certain (e.g., "teh" → "the")
+2. Remove obvious fillers: "um", "uh", "er", "ah", "like", "yeah", "yep", "so", "well", "right", "okay", "alright", "anyway", "anyways", "basically", "actually", "honestly", "literally", "obviously", "definitely", "probably", "really", "just", "you know", "I mean", "kind of", "sort of", "I guess", "to be honest", "to be fair", "at the end of the day", and trailing hedges like "if that makes sense", "you know what I mean", "or whatever", "does that make sense" (but NOT if they carry actual meaning)
+3. Remove stutters and duplicates: "the the" → "the", "I I think" → "I think", "go go ahead" → "go ahead"
+4. Fix clear typos and informal speech: "teh" → "the", "gonna" → "going to", "wanna" → "want to", "gotta" → "got to", "kinda" → "kind of", "sorta" → "sort of"
 5. Format numbers/dates as spoken
 
 LANGUAGE:
