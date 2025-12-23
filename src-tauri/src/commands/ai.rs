@@ -36,6 +36,11 @@ fn normalize_chat_completions_url(base: &str) -> String {
     format!("{}/v1/chat/completions", b)
 }
 
+fn is_local_base_url(base: &str) -> bool {
+    let lower = base.to_lowercase();
+    lower.contains("localhost") || lower.contains("127.0.0.1")
+}
+
 // removed unused validate_api_key helper
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -213,9 +218,9 @@ pub async fn validate_and_cache_api_key(
 
     if provider == "openai" {
         // Only localhost connections are allowed for offline-only operation
-        let base = base_url.clone().ok_or_else(|| {
-            "Base URL is required for OpenAI-compatible providers".to_string()
-        })?;
+        let base = base_url
+            .clone()
+            .ok_or_else(|| "Base URL is required for OpenAI-compatible providers".to_string())?;
 
         // Enforce localhost-only connections
         let base_lower = base.to_lowercase();
@@ -331,6 +336,52 @@ pub async fn test_openai_endpoint(
         );
         Err(format!("HTTP {}: {}", status, snippet))
     }
+}
+
+pub async fn keep_ollama_warm(app: tauri::AppHandle) -> Result<(), String> {
+    let store = app.store("settings").map_err(|e| e.to_string())?;
+
+    let enabled = store
+        .get("ai_enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    if !enabled {
+        return Ok(());
+    }
+
+    let provider = store
+        .get("ai_provider")
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
+        .unwrap_or_default();
+    if provider != "openai" {
+        return Ok(());
+    }
+
+    let model = store
+        .get("ai_model")
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
+        .unwrap_or_default();
+    if model.trim().is_empty() {
+        return Ok(());
+    }
+
+    let base_url = store
+        .get("ai_openai_base_url")
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
+        .unwrap_or_default();
+    if base_url.trim().is_empty() || !is_local_base_url(&base_url) {
+        return Ok(());
+    }
+
+    let no_auth = store
+        .get("ai_openai_no_auth")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    if !no_auth {
+        return Ok(());
+    }
+
+    test_openai_endpoint(base_url, model, None, Some(true)).await
 }
 
 // Frontend is responsible for removing API keys from Stronghold
@@ -463,7 +514,10 @@ pub async fn get_enhancement_options(app: tauri::AppHandle) -> Result<Enhancemen
 
     // Load from store or return defaults
     if let Some(options_value) = store.get("enhancement_options") {
-        log::info!("[get_enhancement_options] Raw stored value: {:?}", options_value);
+        log::info!(
+            "[get_enhancement_options] Raw stored value: {:?}",
+            options_value
+        );
         let options: EnhancementOptions = serde_json::from_value(options_value.clone())
             .map_err(|e| format!("Failed to parse enhancement options: {}", e))?;
         log::info!(
@@ -549,7 +603,10 @@ pub async fn enhance_transcription(text: String, app: tauri::AppHandle) -> Resul
         let base_url = store
             .get("ai_openai_base_url")
             .and_then(|v| v.as_str().map(|s| s.to_string()))
-            .ok_or_else(|| "Ollama not configured. Please configure Ollama in Settings > Formatting.".to_string())?;
+            .ok_or_else(|| {
+                "Ollama not configured. Please configure Ollama in Settings > Formatting."
+                    .to_string()
+            })?;
         let no_auth = store
             .get("ai_openai_no_auth")
             .and_then(|v| v.as_bool())

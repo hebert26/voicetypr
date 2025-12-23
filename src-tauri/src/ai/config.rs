@@ -18,3 +18,5 @@ pub const DEFAULT_TEMPERATURE: f32 = 0.2;
 
 /// Maximum text length for enhancement requests
 pub const MAX_TEXT_LENGTH: usize = 10_000;
+
+pub const OLLAMA_KEEPALIVE_INTERVAL_SECS: u64 = 120;

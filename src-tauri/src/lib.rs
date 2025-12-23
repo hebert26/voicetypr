@@ -1,4 +1,4 @@
-﻿use chrono::Local;
+use chrono::Local;
 use serde_json;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -136,7 +136,8 @@ async fn build_tray_menu<R: tauri::Runtime>(
         }
 
         // Include Soniox (cloud) if connected
-        let has_soniox = crate::secure_store::secure_has(app, "stt_api_key_soniox").unwrap_or(false);
+        let has_soniox =
+            crate::secure_store::secure_has(app, "stt_api_key_soniox").unwrap_or(false);
         if has_soniox {
             models.push(("soniox".to_string(), "Soniox (Cloud)".to_string()));
         }
@@ -151,7 +152,8 @@ async fn build_tray_menu<R: tauri::Runtime>(
 
         for (model_name, display_name) in available_models {
             // Do not show any selection until onboarding is completed
-            let is_selected = should_mark_model_selected(onboarding_done, &model_name, &current_model);
+            let is_selected =
+                should_mark_model_selected(onboarding_done, &model_name, &current_model);
             let model_item = CheckMenuItem::with_id(
                 app,
                 &format!("model_{}", model_name),
@@ -192,7 +194,8 @@ async fn build_tray_menu<R: tauri::Runtime>(
             None
         };
 
-        let current_model_display = format_tray_model_label(onboarding_done, &current_model, resolved_display_name);
+        let current_model_display =
+            format_tray_model_label(onboarding_done, &current_model, resolved_display_name);
 
         Some(Submenu::with_id_and_items(
             app,
@@ -1162,6 +1165,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let window_manager = WindowManager::new(app.app_handle().clone());
             app_state.set_window_manager(window_manager);
 
+            spawn_ollama_keepalive(app.app_handle().clone());
+
             // Clean up old logs on startup (keep only today's log)
             let app_handle_for_logs = app.app_handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -1786,6 +1791,28 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn spawn_ollama_keepalive(app: tauri::AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(
+            crate::ai::config::OLLAMA_KEEPALIVE_INTERVAL_SECS,
+        ));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
+        loop {
+            interval.tick().await;
+
+            let state = app.state::<AppState>().get_current_state();
+            if state != RecordingState::Idle {
+                continue;
+            }
+
+            if let Err(e) = crate::commands::ai::keep_ollama_warm(app.clone()).await {
+                log::debug!("[Ollama KeepAlive] Ping failed: {}", e);
+            }
+        }
+    });
+}
+
 /// Perform essential startup checks
 async fn perform_startup_checks(app: tauri::AppHandle) {
     let checks_start = Instant::now();
@@ -1994,6 +2021,3 @@ async fn perform_startup_checks(app: tauri::AppHandle) {
         checks_start.elapsed().as_millis()
     );
 }
-
-
-
