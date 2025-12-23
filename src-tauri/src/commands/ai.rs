@@ -338,7 +338,7 @@ pub async fn test_openai_endpoint(
     }
 }
 
-pub async fn keep_ollama_warm(app: tauri::AppHandle) -> Result<(), String> {
+pub async fn keep_ollama_warm(app: tauri::AppHandle) -> Result<bool, String> {
     let store = app.store("settings").map_err(|e| e.to_string())?;
 
     let enabled = store
@@ -346,7 +346,7 @@ pub async fn keep_ollama_warm(app: tauri::AppHandle) -> Result<(), String> {
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
     if !enabled {
-        return Ok(());
+        return Ok(false);
     }
 
     let provider = store
@@ -354,7 +354,7 @@ pub async fn keep_ollama_warm(app: tauri::AppHandle) -> Result<(), String> {
         .and_then(|v| v.as_str().map(|s| s.to_string()))
         .unwrap_or_default();
     if provider != "openai" {
-        return Ok(());
+        return Ok(false);
     }
 
     let model = store
@@ -362,7 +362,7 @@ pub async fn keep_ollama_warm(app: tauri::AppHandle) -> Result<(), String> {
         .and_then(|v| v.as_str().map(|s| s.to_string()))
         .unwrap_or_default();
     if model.trim().is_empty() {
-        return Ok(());
+        return Ok(false);
     }
 
     let base_url = store
@@ -370,7 +370,7 @@ pub async fn keep_ollama_warm(app: tauri::AppHandle) -> Result<(), String> {
         .and_then(|v| v.as_str().map(|s| s.to_string()))
         .unwrap_or_default();
     if base_url.trim().is_empty() || !is_local_base_url(&base_url) {
-        return Ok(());
+        return Ok(false);
     }
 
     let no_auth = store
@@ -378,10 +378,12 @@ pub async fn keep_ollama_warm(app: tauri::AppHandle) -> Result<(), String> {
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
     if !no_auth {
-        return Ok(());
+        return Ok(false);
     }
 
-    test_openai_endpoint(base_url, model, None, Some(true)).await
+    test_openai_endpoint(base_url, model, None, Some(true))
+        .await
+        .map(|_| true)
 }
 
 // Frontend is responsible for removing API keys from Stronghold

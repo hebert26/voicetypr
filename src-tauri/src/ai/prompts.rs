@@ -10,19 +10,18 @@ CRITICAL - DO NOT:
 - Remove constraints, conditions, or specifics they mentioned
 - Rewrite for "better clarity" - keep their exact phrasing
 - Infer or assume anything
-
+You are asking a question.
 ONLY DO (minimal mechanical cleanup):
 1. Fix punctuation, capitalization
-2. Remove ONLY obvious fillers: "um", "uh", "like", "you know" (but NOT if they're part of actual content)
+2. Remove obvious fillers: "um", "uh", "er", "ah", "like", "yeah", "yep", "so", "well", "right", "okay", "basically", "actually", "honestly", "literally", "you know", "I mean", "kind of", "sort of", "I guess", and trailing hedges like "if that makes sense", "you know what I mean", "or whatever" (but NOT if they carry actual meaning)
 3. Remove immediate duplicates: "the the" → "the"
 4. Fix clear typos when 100% certain (e.g., "teh" → "the")
 5. Format numbers/dates as spoken
 
-BILINGUAL (Spanish/English):
-- Detect primary language, output in that language
-- Do NOT translate
-- Preserve code-switching: "check el archivo" stays mixed
-- Fix grammar per language (Spanish accents/gender, English articles) without changing meaning
+LANGUAGE:
+- ALWAYS output in English, 100% of the time
+- If the user speaks in Spanish, translate to English while preserving the original meaning
+- Do not mix languages in the output
 
 OUTPUT:
 - Keep original type: question stays question, command stays command
@@ -81,7 +80,10 @@ pub fn build_enhancement_prompt(
             .collect();
 
         if !vocab_entries.is_empty() {
-            log::info!("[AI Prompt] Adding {} vocabulary entries", vocab_entries.len());
+            log::info!(
+                "[AI Prompt] Adding {} vocabulary entries",
+                vocab_entries.len()
+            );
             format!(
                 "\n\nVocabulary corrections (use these spellings):\n{}",
                 vocab_entries
@@ -100,8 +102,14 @@ pub fn build_enhancement_prompt(
     // Build the complete prompt with custom instructions BEFORE the text for emphasis
     let custom_instruction_section = if let Some(instructions) = &options.custom_instructions {
         if !instructions.trim().is_empty() {
-            log::info!("[AI Prompt] Adding custom instructions: {}", instructions.trim());
-            format!("\n\nIMPORTANT - You MUST also follow these instructions:\n{}", instructions.trim())
+            log::info!(
+                "[AI Prompt] Adding custom instructions: {}",
+                instructions.trim()
+            );
+            format!(
+                "\n\nIMPORTANT - You MUST also follow these instructions:\n{}",
+                instructions.trim()
+            )
         } else {
             String::new()
         }
@@ -111,7 +119,13 @@ pub fn build_enhancement_prompt(
 
     let mut prompt = if mode_transform.is_empty() {
         // Default preset: just base processing
-        format!("{}{}{}\n\nTranscribed text:\n{}", base_prompt, vocabulary_section, custom_instruction_section, text.trim())
+        format!(
+            "{}{}{}\n\nTranscribed text:\n{}",
+            base_prompt,
+            vocabulary_section,
+            custom_instruction_section,
+            text.trim()
+        )
     } else {
         // Other presets: base + transform
         format!(
@@ -132,4 +146,3 @@ pub fn build_enhancement_prompt(
     log::debug!("[AI Prompt] Full prompt built:\n{}", prompt);
     prompt
 }
-

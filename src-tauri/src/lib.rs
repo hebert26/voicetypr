@@ -90,6 +90,11 @@ pub(crate) fn format_tray_model_label(
     }
 }
 
+fn is_local_base_url(base: &str) -> bool {
+    let lower = base.to_lowercase();
+    lower.contains("localhost") || lower.contains("127.0.0.1")
+}
+
 // Function to build the tray menu
 async fn build_tray_menu<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
@@ -144,6 +149,66 @@ async fn build_tray_menu<R: tauri::Runtime>(
 
         (models, whisper_all)
     };
+
+    let voice_ready = !current_model.is_empty()
+        && available_models
+            .iter()
+            .any(|(name, _)| name == &current_model);
+
+    let ollama_ready = match app.store("settings") {
+        Ok(store) => {
+            let ai_enabled = store
+                .get("ai_enabled")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let provider = store
+                .get("ai_provider")
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .unwrap_or_default();
+            let model = store
+                .get("ai_model")
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .unwrap_or_default();
+            let base_url = store
+                .get("ai_openai_base_url")
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .unwrap_or_default();
+            let no_auth = store
+                .get("ai_openai_no_auth")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+
+            let configured = ai_enabled
+                && provider == "openai"
+                && !model.trim().is_empty()
+                && no_auth
+                && !base_url.trim().is_empty()
+                && is_local_base_url(&base_url);
+
+            configured && app.state::<AppState>().ollama_ready.load(Ordering::SeqCst)
+        }
+        Err(_) => false,
+    };
+
+    let status_icon = match (ollama_ready, voice_ready) {
+        (true, true) => "🟢",
+        (true, false) | (false, true) => "🟡",
+        (false, false) => "🔴",
+    };
+    let status_label = format!(
+        "{} {} • {}",
+        status_icon,
+        if ollama_ready {
+            "Ollama running"
+        } else {
+            "Ollama not running"
+        },
+        if voice_ready {
+            "Voice model running"
+        } else {
+            "Voice model not ready"
+        }
+    );
 
     // Create model submenu if there are any available models
     let model_submenu = if !available_models.is_empty() {
@@ -347,19 +412,23 @@ async fn build_tray_menu<R: tauri::Runtime>(
     };
 
     // Create menu items
+    let status_item = MenuItem::with_id(app, "status", status_label, false, None::<&str>)?;
+    let separator_status = PredefinedMenuItem::separator(app)?;
     let separator1 = PredefinedMenuItem::separator(app)?;
-    let settings_i = MenuItem::with_id(app, "settings", "Dashboard", true, None::<&str>)?;
+    let settings_i = MenuItem::with_id(app, "settings", "Open Dashboard…", true, None::<&str>)?;
     let check_updates_i = MenuItem::with_id(
         app,
         "check_updates",
-        "Check for Updates",
+        "Check for Updates…",
         true,
         None::<&str>,
     )?;
+    let restart_i = MenuItem::with_id(app, "restart", "Restart VoiceTypr", true, None::<&str>)?;
     let separator2 = PredefinedMenuItem::separator(app)?;
     let quit_i = MenuItem::with_id(app, "quit", "Quit VoiceTypr", true, None::<&str>)?;
 
     let mut menu_builder = MenuBuilder::new(app);
+    menu_builder = menu_builder.item(&status_item).item(&separator_status);
 
     if let Some(model_submenu) = model_submenu {
         menu_builder = menu_builder.item(&model_submenu);
@@ -386,6 +455,7 @@ async fn build_tray_menu<R: tauri::Runtime>(
         .item(&separator1)
         .item(&settings_i)
         .item(&check_updates_i)
+        .item(&restart_i)
         .item(&separator2)
         .item(&quit_i)
         .build()?;
@@ -446,6 +516,9 @@ pub struct AppState {
 
     // License cache with 6-hour expiration
     pub license_cache: Arc<tokio::sync::RwLock<Option<crate::commands::license::CachedLicense>>>,
+
+    // Tracks recent Ollama readiness for tray status
+    pub ollama_ready: Arc<AtomicBool>,
 }
 
 impl AppState {
@@ -464,6 +537,7 @@ impl AppState {
             window_manager: Arc::new(Mutex::new(None)),
             recording_config_cache: Arc::new(tokio::sync::RwLock::new(None)),
             license_cache: Arc::new(tokio::sync::RwLock::new(None)),
+            ollama_ready: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -1226,6 +1300,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         app.exit(0);
                     } else if event_id == "check_updates" {
                         let _ = app.emit("tray-check-updates", ());
+                    } else if event_id == "restart" {
+                        app.request_restart();
                     } else if event_id.starts_with("model_") {
                         // Handle model selection
                         let model_name = match event_id.strip_prefix("model_") {
@@ -1798,6 +1874,20 @@ fn spawn_ollama_keepalive(app: tauri::AppHandle) {
         ));
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
+        let ollama_ready = app.state::<AppState>().ollama_ready.clone();
+        let initial_ready = match crate::commands::ai::keep_ollama_warm(app.clone()).await {
+            Ok(true) => true,
+            Ok(false) => false,
+            Err(e) => {
+                log::debug!("[Ollama KeepAlive] Ping failed: {}", e);
+                false
+            }
+        };
+        let previous = ollama_ready.swap(initial_ready, Ordering::SeqCst);
+        if previous != initial_ready {
+            let _ = crate::commands::settings::update_tray_menu(app.clone()).await;
+        }
+
         loop {
             interval.tick().await;
 
@@ -1806,8 +1896,18 @@ fn spawn_ollama_keepalive(app: tauri::AppHandle) {
                 continue;
             }
 
-            if let Err(e) = crate::commands::ai::keep_ollama_warm(app.clone()).await {
-                log::debug!("[Ollama KeepAlive] Ping failed: {}", e);
+            let ready = match crate::commands::ai::keep_ollama_warm(app.clone()).await {
+                Ok(true) => true,
+                Ok(false) => false,
+                Err(e) => {
+                    log::debug!("[Ollama KeepAlive] Ping failed: {}", e);
+                    false
+                }
+            };
+
+            let previous = ollama_ready.swap(ready, Ordering::SeqCst);
+            if previous != ready {
+                let _ = crate::commands::settings::update_tray_menu(app.clone()).await;
             }
         }
     });
