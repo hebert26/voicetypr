@@ -13,7 +13,8 @@ pub const RETRY_BASE_DELAY_MS: u64 = 1000;
 pub const MIN_API_KEY_LENGTH: usize = 10;
 
 /// Default temperature for AI models (0.0 = deterministic, 1.0 = creative)
-pub const DEFAULT_TEMPERATURE: f32 = 0.5;
+/// Set to 0.2 for meaning-preserving transcription cleanup (conservative behavior)
+pub const DEFAULT_TEMPERATURE: f32 = 0.2;
 
 /// Maximum text length for enhancement requests
 pub const MAX_TEXT_LENGTH: usize = 10_000;

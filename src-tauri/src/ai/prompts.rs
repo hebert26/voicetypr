@@ -1,15 +1,39 @@
 use serde::{Deserialize, Serialize};
 
-// 100/100 Base Prompt - deterministic last-intent processing
-const BASE_PROMPT: &str = r#"You are a text post-processor. Your ONLY job is to clean up transcribed speech and output the result.
+// Meaning-preserving prompt - strict constraints to prevent changing intent
+const BASE_PROMPT: &str = r#"You are a mechanical text cleaner. Your job is to fix typos and grammar in transcribed speech WITHOUT changing what was said.
 
-Rules:
-- Resolve self-corrections (keep final intent only)
-- Fix grammar, punctuation, capitalization
-- Remove fillers and false starts
-- Format numbers/dates as spoken
+CRITICAL - DO NOT:
+- Change questions into commands (keep "why is X broken?" as a question, don't say "fix X")
+- Add assumed solutions (if they ask "why", don't tell them to "do Y")
+- Add steps, details, examples, or clarifications they didn't say
+- Remove constraints, conditions, or specifics they mentioned
+- Rewrite for "better clarity" - keep their exact phrasing
+- Infer or assume anything
 
-CRITICAL: Output ONLY the cleaned text. No explanations. No preamble. No "here is..." or "I have...". Just the text itself."#;
+ONLY DO (minimal mechanical cleanup):
+1. Fix punctuation, capitalization
+2. Remove ONLY obvious fillers: "um", "uh", "like", "you know" (but NOT if they're part of actual content)
+3. Remove immediate duplicates: "the the" → "the"
+4. Fix clear typos when 100% certain (e.g., "teh" → "the")
+5. Format numbers/dates as spoken
+
+BILINGUAL (Spanish/English):
+- Detect primary language, output in that language
+- Do NOT translate
+- Preserve code-switching: "check el archivo" stays mixed
+- Fix grammar per language (Spanish accents/gender, English articles) without changing meaning
+
+OUTPUT:
+- Keep original type: question stays question, command stays command
+- Keep original structure and wording
+- One paragraph or simple bullets only if clearly listed
+- Imperative voice if it was a command
+- Question format if they asked something
+
+WHEN UNSURE: Keep the original wording exactly. Do not guess.
+
+Now clean this transcription:"#;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EnhancementPreset {
@@ -44,11 +68,8 @@ pub fn build_enhancement_prompt(
     // Base processing applies to ALL presets
     let base_prompt = BASE_PROMPT;
 
-    // Add mode-specific transformation if not Default
-    let mode_transform = match options.preset {
-        EnhancementPreset::Default => "",
-        EnhancementPreset::Prompts => PROMPTS_TRANSFORM,
-    };
+    // Preset is ignored - all modes use the same meaning-preserving prompt
+    let mode_transform = "";
 
     // Build vocabulary section if provided
     let vocabulary_section = if !options.custom_vocabulary.is_empty() {
@@ -112,11 +133,3 @@ pub fn build_enhancement_prompt(
     prompt
 }
 
-// Minimal transformation layer for Prompts preset
-const PROMPTS_TRANSFORM: &str = r#"Now transform the cleaned text into a concise AI prompt:
-- Classify as Request, Question, or Task.
-- Add only essential missing what/how/why.
-- Include constraints and success criteria if relevant.
-- Specify output format when helpful.
-- Preserve all technical details; do not invent any.
-Return only the enhanced prompt."#;

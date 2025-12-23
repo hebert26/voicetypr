@@ -190,11 +190,9 @@ impl AIProvider for OpenAIProvider {
         // Log what options we received
         log::info!("[OpenAIProvider] Request options: {:?}", request.options);
 
-        let prompt = prompts::build_enhancement_prompt(
-            &request.text,
-            request.context.as_deref(),
-            &request.options.unwrap_or_default(),
-        );
+        let options = request.options.unwrap_or_default();
+        let prompt =
+            prompts::build_enhancement_prompt(&request.text, request.context.as_deref(), &options);
 
         // Log the FULL prompt being sent to the API
         log::info!(
@@ -220,7 +218,8 @@ impl AIProvider for OpenAIProvider {
             messages: vec![
                 Message {
                     role: "system".to_string(),
-                    content: "You are a careful text formatter that only returns the cleaned text per the provided rules.".to_string(),
+                    content: "You are a mechanical text editor. Only fix typos and grammar. Never change what the user is asking for or add information they didn't say. Preserve questions as questions and commands as commands."
+                        .to_string(),
                 },
                 Message {
                     role: "user".to_string(),
