@@ -1557,8 +1557,9 @@ pub async fn stop_recording(
                         log::error!("WindowManager not initialized");
                     }
 
-                    // Reduced delay to ensure UI is stable (was 100ms, now 50ms)
-                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                    // Delay to ensure UI is stable and focus returns to target app
+                    // Increased from 50ms to 100ms for more reliable paste
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
                     // Now handle text insertion with stable UI
                     match crate::commands::text::insert_text(

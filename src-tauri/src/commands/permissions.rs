@@ -71,13 +71,25 @@ pub async fn request_accessibility_permission(app: tauri::AppHandle) -> Result<b
         }
 
         log::info!("Requesting accessibility permissions");
+
+        // First try the standard request
         request_accessibility_permission().await;
 
         // Wait a bit for macOS to process the request
-        sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(300)).await;
 
-        // Check the permission status after request and update readiness
+        // Check if permission was granted
         let has_permission = check_accessibility_permission().await;
+
+        if !has_permission {
+            // If not granted, open System Settings directly to Accessibility pane
+            log::info!("Opening System Settings > Privacy & Security > Accessibility");
+            let _ = std::process::Command::new("open")
+                .arg(
+                    "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+                )
+                .spawn();
+        }
 
         log::info!(
             "Accessibility permission check after request: {}",

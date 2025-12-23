@@ -40,11 +40,7 @@
   "bundle": {
     "publisher": "Ideaplexa LLC",
     "active": true,
-    "targets": [
-      "nsis",
-      "app",
-      "dmg"
-    ],
+    "targets": ["nsis", "app", "dmg"],
     "externalBin": [
       "../sidecar/ffmpeg/dist/ffmpeg",
       "../sidecar/ffmpeg/dist/ffprobe",
@@ -62,7 +58,7 @@
       "minimumSystemVersion": "13.0",
       "entitlements": "./entitlements.plist",
       "hardenedRuntime": true,
-      "signingIdentity": "Developer ID Application: Ideaplexa LLC (53P98M92V7)"
+      "signingIdentity": "-"
     },
     "windows": {
       "allowDowngrades": false,

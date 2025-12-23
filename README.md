@@ -3,229 +3,107 @@
 
   # VoiceTypr
 
-  **Open Source AI Powered voice to text dictation tool, alternative to superwhisper, whispr flow**
+  **Open Source AI Powered voice to text dictation tool, alternative to superwhisper, wispr flow**
 
   [![GitHub release](https://img.shields.io/github/v/release/moinulmoin/voicetypr)](https://github.com/moinulmoin/voicetypr/releases)
   [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md)
   [![macOS](https://img.shields.io/badge/macOS-13.0+-black)](https://www.apple.com/macos)
   [![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D6)](https://www.microsoft.com/windows)
-  [![Downloads](https://img.shields.io/github/downloads/moinulmoin/voicetypr/total)](https://github.com/moinulmoin/voicetypr/releases)
 
-  [Download](https://github.com/moinulmoin/voicetypr/releases/latest) • [Features](#features) • [Installation](#installation) • [Usage](#usage) • [Build from Source](#️-building-from-source)
+  [Download](https://github.com/moinulmoin/voicetypr/releases/latest) | [Features](#features) | [Installation](#installation) | [Building from Source](#building-from-source)
 </div>
 
-## 🎯 What is VoiceTypr?
+## What is VoiceTypr?
 
-VoiceTypr is an open source AI voice-to-text dictation tool, alternative to Wispr Flow and SuperWhisper. Available for macOS and Windows. Pay once, use forever.
+VoiceTypr is an open source AI voice-to-text dictation tool, alternative to Wispr Flow and SuperWhisper. Available for macOS and Windows.
 
-## ✨ Features
+## Features
 
-### 🎙️ **Instant Voice-to-Text**
-- System-wide hotkey for quick recording
-- Automatic text insertion at cursor position
-- Works in any app - cursor, claude code, chatgpt, slack, etc
+- **System-wide hotkey** for quick recording with automatic text insertion at cursor
+- **100% offline** - your voice never leaves your device
+- **Multiple AI models** - choose accuracy vs speed tradeoffs
+- **99+ languages** supported out of the box
+- **Hardware acceleration** - Metal on macOS, Vulkan on Windows
+- **AI Enhancement** - optional text cleanup via Ollama, OpenAI, Groq, or Gemini
+- **Privacy first** - no cloud, no tracking, open source
 
-### 🤖 **Powered by local AI**
-- 100% offline transcription - your voice never leaves your device
-- Multiple model sizes for accuracy vs speed tradeoffs
-- Support for 99+ languages out of the box
-- Hardware acceleration (Metal on macOS)
+## Installation
 
-### 🚀 **Native Performance**
-- Built with Rust and Tauri for blazing-fast performance
-- Optimized for each platform with hardware acceleration
-- Minimal resource usage with maximum efficiency
+### macOS
+1. Download [VoiceTypr.dmg](https://github.com/moinulmoin/voicetypr/releases/latest)
+2. Drag VoiceTypr to Applications
+3. Launch and follow onboarding to download an AI model
 
-### 🔒 **Privacy First**
-- Complete offline operation - no cloud, no tracking, no external calls
-- Your recordings stay on your device
-- Open source for full transparency
+**Requirements:** macOS 13.0+, 3-4 GB disk space, Microphone & Accessibility permissions
 
-### 🤖 **AI Enhancement with Ollama**
-- Transform your transcriptions with local AI via [Ollama](https://ollama.ai)
-- Smart presets: Default (cleanup) and Prompts (AI prompt generation)
-- **100% local** - no API keys, no internet, no data leaves your machine
-- Custom vocabulary and instructions support
+### Windows
+1. Download [VoiceTypr installer](https://github.com/moinulmoin/voicetypr/releases/latest)
+2. Run installer and launch from Start Menu
+3. Follow onboarding to download an AI model
 
-### 🎨 **Clean Design**
-- Clean, user interface
-- Menubar integration for quick access
-- Visual feedback during recording
-- Auto-updates to keep you on the latest version
+**Requirements:** Windows 10/11 (64-bit), 3-4 GB disk space
 
-## 📦 Installation
+## Usage
 
-### Requirements
+1. Press your hotkey (default: `Cmd+Shift+Space`) to start recording
+2. Speak naturally
+3. Press hotkey again to stop - text appears at your cursor
 
-#### macOS
-- macOS 13.0 (Ventura) or later
-- 3-4 GB free disk space (for AI models)
-- Microphone access permission
-- Accessibility access permission
+**Tips:**
+- Double-press `Esc` to cancel recording
+- Whisper auto-detects language
 
-#### Windows
-- Windows 10/11 (64-bit)
-- 3-4 GB free disk space (for AI models)
-- GPU acceleration available (5-10x faster with NVIDIA, AMD, Intel GPUs)
-
-### Quick Install
-
-#### macOS
-1. Download the latest [VoiceTypr.dmg](https://github.com/moinulmoin/voicetypr/releases/latest)
-2. Open the DMG and drag VoiceTypr to Applications
-3. Launch VoiceTypr from Applications
-4. Follow the onboarding to download your preferred AI model
-
-> **Note**: VoiceTypr is fully signed and notarized by Apple, so you can run it without security warnings.
-
-#### Windows
-1. Download the latest [VoiceTypr installer](https://github.com/moinulmoin/voicetypr/releases/latest)
-2. Run the installer
-3. Launch VoiceTypr from Start Menu
-4. Follow the onboarding to download your preferred AI model
-
-> **GPU Acceleration (5-10x faster)**
-> - VoiceTypr automatically uses your GPU if available
-> - For best performance, ensure your graphics drivers are up to date:
->   - [NVIDIA Drivers](https://www.nvidia.com/drivers)
->   - [AMD Drivers](https://www.amd.com/support)
->   - [Intel Drivers](https://www.intel.com/content/www/us/en/support/products/80939/graphics.html)
-> - Falls back to CPU automatically if GPU unavailable
-
-## 🎮 Usage
-
-### Getting Started
-
-1. **Launch VoiceTypr** - Find it in your Applications folder (macOS) or Start Menu (Windows)
-2. **Grant Permissions** - Allow microphone access (and accessibility on macOS)
-3. **Download a Model** - Choose from tiny to large models based on your needs
-4. **Start Transcribing** - Press your hotkey anywhere to record
-
-### Tips & Tricks
-
-- 🎯 **Quick Cancel**: Double Press `Esc` while recording to cancel
-- 📝 **Long Recordings**: VoiceTypr handles extended recordings seamlessly but shorter recordings are recommended to do.
-- 🌍 **Multiple Languages**: Just speak - Whisper auto-detects the language
-- ⚡ **Instant Insert**: Text appears right where your cursor is
-
-### 🦙 Ollama Setup (AI Formatting)
-
-VoiceTypr uses Ollama for local AI text formatting. Install and configure with these commands:
-
-```bash
-# 1. Install Ollama (macOS)
-brew install ollama
-
-# Or download from https://ollama.ai
-
-# 2. Start Ollama server
-ollama serve
-
-# 3. Download a model (choose one)
-ollama pull qwen2.5:1.5b   # Recommended - 1GB, fast
-ollama pull qwen2.5:3b     # Better quality - 2GB
-ollama pull llama3.2:3b    # Alternative - 2GB
-ollama pull phi3:mini      # Microsoft - 2.3GB
-
-# 4. Verify model is available
-ollama list
-```
-
-**Default Configuration:**
-- Port: `11434`
-- Endpoint: `http://localhost:11434/v1/chat/completions`
-
-**Prompt Location:** The AI enhancement prompts are defined in [`src-tauri/src/ai/prompts.rs`](src-tauri/src/ai/prompts.rs)
-
-### Project Structure
-
-```
-voicetypr/
-├── src/                    # React frontend
-│   ├── components/         # UI components
-│   ├── hooks/             # Custom React hooks
-│   └── types/             # TypeScript types
-├── src-tauri/             # Rust backend
-│   ├── src/
-│   │   ├── audio/         # Audio recording
-│   │   ├── whisper/       # Whisper integration
-│   │   └── commands/      # Tauri commands
-│   └── capabilities/      # Security capabilities
-├── scripts/               # Build and utility scripts
-└── tests/                 # Test suites
-```
-
-## 🛠️ Building from Source
+## Building from Source
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18 or later)
+- [Node.js](https://nodejs.org/) v18+
 - [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
 - [Rust](https://www.rust-lang.org/tools/install) (latest stable)
 - [cmake](https://cmake.org/) (`brew install cmake` on macOS)
 
-### Build Steps
+### Build
 
 ```bash
-# Clone the repository
 git clone https://github.com/moinulmoin/voicetypr.git
 cd voicetypr
-
-# Install dependencies
 pnpm install
 
-# Development mode (with hot reload)
+# Development
 pnpm tauri dev
 
-# Build release bundle (.app and .dmg on macOS)
+# Release build
 ./scripts/build-release.sh
 ```
 
-The built app will be at:
-- **App bundle:** `src-tauri/target/release/bundle/macos/VoiceTypr.app`
-- **DMG installer:** `src-tauri/target/release/bundle/dmg/VoiceTypr_*.dmg`
-
-### Reset Permissions (if needed)
-
-If you need to reset accessibility permissions after rebuilding:
+### Troubleshooting
 
 ```bash
+# Reset accessibility permissions (after rebuilding)
 tccutil reset Accessibility com.ideaplexa.voicetypr
+
+# Fix permission denied errors (Error 13)
+# Use if app crashes on launch or model download fails
+sudo chown -R $(whoami):staff ~/Library/Application\ Support/com.ideaplexa.voicetypr/
+sudo chown -R $(whoami):staff ~/Library/Logs/com.ideaplexa.voicetypr/
+
+# Clean build directories
+rm -rf sidecar/parakeet-swift/.build
+rm -rf src-tauri/target
 ```
 
-### Model Storage Location
+> **Warning**: Never run `pnpm tauri dev` or `pnpm tauri build` with `sudo`. This causes permission issues.
 
-Downloaded AI models are stored in the app's data directory:
+### Model Storage
 
-**macOS:**
 ```
+# macOS
 ~/Library/Application Support/com.ideaplexa.voicetypr/models/
-```
 
-**Windows:**
-```
+# Windows
 %APPDATA%\com.ideaplexa.voicetypr\models\
 ```
 
-To view downloaded models (macOS):
-```bash
-ls -lh ~/Library/Application\ Support/com.ideaplexa.voicetypr/models/
-```
+## License
 
-## 🔧 Troubleshooting
-
-### Windows GPU Acceleration
-
-VoiceTypr automatically detects and uses your GPU for faster transcription. If you're experiencing slower performance:
-
-**Update your graphics drivers** - This is the most common fix:
-   - [NVIDIA Drivers](https://www.nvidia.com/drivers)
-   - [AMD Drivers](https://www.amd.com/support)
-   - [Intel Drivers](https://www.intel.com/content/www/us/en/support/products/80939/graphics.html)
-
-> **Note**: VoiceTypr always works - it automatically falls back to CPU if GPU acceleration is unavailable
-
-## 📄 License
-
-VoiceTypr is licensed under the [GNU Affero General Public License v3.0](LICENSE.md).
-</div>
+[GNU Affero General Public License v3.0](LICENSE.md)
