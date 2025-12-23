@@ -1,17 +1,6 @@
-<div align="center">
-  <img src="src-tauri/icons/icon.png" alt="VoiceTypr Logo" width="128" height="128">
-
-  # VoiceTypr
-
-  **Open Source AI Powered voice to text dictation tool, alternative to superwhisper, wispr flow**
-
-  [![GitHub release](https://img.shields.io/github/v/release/moinulmoin/voicetypr)](https://github.com/moinulmoin/voicetypr/releases)
-  [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md)
-  [![macOS](https://img.shields.io/badge/macOS-13.0+-black)](https://www.apple.com/macos)
-  [![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D6)](https://www.microsoft.com/windows)
-
-  [Download](https://github.com/moinulmoin/voicetypr/releases/latest) | [Features](#features) | [Installation](#installation) | [Building from Source](#building-from-source)
-</div>
+ai/gemma3:latest
+12434
+ 
 
 ## What is VoiceTypr?
 

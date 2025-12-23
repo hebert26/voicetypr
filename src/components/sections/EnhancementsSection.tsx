@@ -6,7 +6,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { EnhancementOptions } from "@/types/ai";
 import { fromBackendOptions, toBackendOptions } from "@/types/ai";
-import { hasApiKey, getApiKey, removeApiKey, saveOpenAIKeyWithConfig } from "@/utils/keyring";
+import {
+  hasApiKey,
+  getApiKey,
+  removeApiKey,
+  saveOpenAIKeyWithConfig,
+} from "@/utils/keyring";
 import { useReadinessState } from "@/contexts/ReadinessContext";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -30,24 +35,31 @@ interface AISettings {
 
 export function EnhancementsSection() {
   const readiness = useReadinessState();
-  
+
   const [aiSettings, setAISettings] = useState<AISettings>({
     enabled: false,
     provider: "openai", // Ollama uses openai provider internally
-    model: "",  // Empty by default until user selects
+    model: "", // Empty by default until user selects
     hasApiKey: false,
   });
 
   const [showOllamaConfig, setShowOllamaConfig] = useState(false);
-  const [providerApiKeys, setProviderApiKeys] = useState<Record<string, boolean>>({});
+  const [ollamaConfig, setOllamaConfig] = useState<{
+    model: string;
+    port: number;
+  }>({ model: "", port: 11434 });
+  const [providerApiKeys, setProviderApiKeys] = useState<
+    Record<string, boolean>
+  >({});
   const [enhancementOptions, setEnhancementOptions] = useState<{
     preset: "Default" | "Prompts";
     customVocabulary: string[];
     customInstructions?: string;
   }>({
-    preset: 'Default',
+    preset: "Default",
     customVocabulary: [],
-    customInstructions: 'Fix any mistakes. Make sure sentences are clear and make sense.',
+    customInstructions:
+      "Fix any mistakes. Make sure sentences are clear and make sense.",
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
@@ -57,13 +69,15 @@ export function EnhancementsSection() {
       id: "ollama-local",
       name: "🦙 Ollama (Local)",
       provider: "ollama",
-      description: "Run AI locally - no API key or internet needed"
-    }
+      description: "Run AI locally - no API key or internet needed",
+    },
   ];
 
   const loadEnhancementOptions = async () => {
     try {
-      const options = await invoke<EnhancementOptions>("get_enhancement_options");
+      const options = await invoke<EnhancementOptions>(
+        "get_enhancement_options",
+      );
       console.log("[EnhancementOptions] Loaded from backend:", options);
       const frontendOptions = fromBackendOptions(options);
       console.log("[EnhancementOptions] Frontend format:", frontendOptions);
@@ -78,26 +92,30 @@ export function EnhancementsSection() {
       // First, check and cache API keys if not already loaded
       let currentKeyStatus = providerApiKeys;
       if (Object.keys(providerApiKeys).length === 0) {
-        const providers = [...new Set(models.map(m => m.provider))];
+        const providers = [...new Set(models.map((m) => m.provider))];
         const keyStatus: Record<string, boolean> = {};
 
         // Batch check API keys and cache them to backend
-        await Promise.all(providers.map(async (provider) => {
-          const hasKey = await hasApiKey(provider);
-          keyStatus[provider] = hasKey;
-          if (hasKey) {
-            console.log(`[AI Settings] Found ${provider} API key in keyring, caching to backend`);
-            // Load the key from keyring and cache it to backend
-            try {
-              const apiKey = await getApiKey(provider);
-              if (apiKey) {
-                await invoke('cache_ai_api_key', { provider, apiKey });
+        await Promise.all(
+          providers.map(async (provider) => {
+            const hasKey = await hasApiKey(provider);
+            keyStatus[provider] = hasKey;
+            if (hasKey) {
+              console.log(
+                `[AI Settings] Found ${provider} API key in keyring, caching to backend`,
+              );
+              // Load the key from keyring and cache it to backend
+              try {
+                const apiKey = await getApiKey(provider);
+                if (apiKey) {
+                  await invoke("cache_ai_api_key", { provider, apiKey });
+                }
+              } catch (error) {
+                console.error(`Failed to cache ${provider} API key:`, error);
               }
-            } catch (error) {
-              console.error(`Failed to cache ${provider} API key:`, error);
             }
-          }
-        }));
+          }),
+        );
 
         setProviderApiKeys(keyStatus);
         currentKeyStatus = keyStatus;
@@ -111,21 +129,25 @@ export function EnhancementsSection() {
       if (readiness?.ai_ready) {
         // AI is ready, so current provider has API key
         const currentProvider = settings.provider;
-        setProviderApiKeys(prev => ({ ...prev, [currentProvider]: true }));
+        setProviderApiKeys((prev) => ({ ...prev, [currentProvider]: true }));
       }
 
       // Auto-select model if only one has API key and no model is currently selected
-      const modelsWithApiKey = models.filter(m => currentKeyStatus[m.provider]);
+      const modelsWithApiKey = models.filter(
+        (m) => currentKeyStatus[m.provider],
+      );
       if (!settings.model && modelsWithApiKey.length === 1) {
         const autoSelectModel = modelsWithApiKey[0];
-        console.log(`[AI Settings] Auto-selecting model: ${autoSelectModel.name}`);
+        console.log(
+          `[AI Settings] Auto-selecting model: ${autoSelectModel.name}`,
+        );
 
         // Update backend settings with auto-selected model
         // Preserve the enabled state from settings
         await invoke("update_ai_settings", {
           enabled: settings.enabled, // Preserve the existing enabled state
           provider: autoSelectModel.provider,
-          model: autoSelectModel.id
+          model: autoSelectModel.id,
         });
 
         // Update local state
@@ -134,15 +156,23 @@ export function EnhancementsSection() {
           enabled: settings.enabled, // Preserve the existing enabled state
           provider: autoSelectModel.provider,
           model: autoSelectModel.id,
-          hasApiKey: true
+          hasApiKey: true,
         });
       } else {
         // Respect backend hasApiKey for OpenAI (no-auth). For others, derive from keyring status.
-        const currentModelProvider = settings.provider === 'openai'
-          ? 'openai'
-          : (settings.model ? models.find(m => m.id === settings.model)?.provider || null : null);
-        const currentModelHasKey = currentModelProvider ? currentKeyStatus[currentModelProvider] : false;
-        const derivedHasKey = settings.provider === 'openai' ? settings.hasApiKey : currentModelHasKey;
+        const currentModelProvider =
+          settings.provider === "openai"
+            ? "openai"
+            : settings.model
+              ? models.find((m) => m.id === settings.model)?.provider || null
+              : null;
+        const currentModelHasKey = currentModelProvider
+          ? currentKeyStatus[currentModelProvider]
+          : false;
+        const derivedHasKey =
+          settings.provider === "openai"
+            ? settings.hasApiKey
+            : currentModelHasKey;
 
         setAISettings({
           ...settings,
@@ -154,6 +184,25 @@ export function EnhancementsSection() {
     }
   }, [readiness, providerApiKeys, models]);
 
+  // Load saved Ollama config (base_url contains port, model from aiSettings)
+  const loadOllamaConfig = useCallback(async () => {
+    try {
+      const config = await invoke<{ base_url: string; no_auth: boolean }>(
+        "get_openai_config",
+      );
+      // Parse port from URL like "http://localhost:12434"
+      const urlMatch = config.base_url.match(/:(\d+)$/);
+      const port = urlMatch ? parseInt(urlMatch[1]) : 11434;
+
+      setOllamaConfig({
+        model: aiSettings.model || "",
+        port,
+      });
+    } catch (e) {
+      console.error("Failed to load Ollama config:", e);
+    }
+  }, [aiSettings.model]);
+
   // Load settings only once when component becomes visible
   useEffect(() => {
     if (!settingsLoaded) {
@@ -163,9 +212,16 @@ export function EnhancementsSection() {
     }
   }, [settingsLoaded, loadAISettings]);
 
+  // Load Ollama config when aiSettings.model changes
+  useEffect(() => {
+    if (settingsLoaded) {
+      loadOllamaConfig();
+    }
+  }, [settingsLoaded, aiSettings.model, loadOllamaConfig]);
+
   // Listen for AI readiness changes from backend
   useEffect(() => {
-    const unlistenReady = listen('ai-ready', async () => {
+    const unlistenReady = listen("ai-ready", async () => {
       // Only reload if settings were already loaded
       if (settingsLoaded) {
         await loadAISettings();
@@ -173,73 +229,97 @@ export function EnhancementsSection() {
     });
 
     // Listen for API key save events
-    const unlistenApiKey = listen('api-key-saved', async (event) => {
-      console.log('[AI Settings] API key saved event received:', event.payload);
+    const unlistenApiKey = listen("api-key-saved", async (event) => {
+      console.log("[AI Settings] API key saved event received:", event.payload);
       // Only reload settings, not API keys check
       const settings = await invoke<AISettings>("get_ai_settings");
       setAISettings(settings);
-      
+
       // Update provider key status for the specific provider
       const provider = (event.payload as any).provider;
       if (provider) {
-        setProviderApiKeys(prev => ({ ...prev, [provider]: true }));
+        setProviderApiKeys((prev) => ({ ...prev, [provider]: true }));
       }
     });
 
     // Listen for API key remove events
-    const unlistenApiKeyRemoved = listen<{ provider: string }>('api-key-removed', async (event) => {
-      console.log('[AI Settings] API key removed for provider:', event.payload.provider);
-      
-      // Update local state immediately
-      setProviderApiKeys(prev => ({ ...prev, [event.payload.provider]: false }));
-      
-      // Check if the removed key was for the currently selected model
-      const selectedModel = models.find(m => m.id === aiSettings.model);
-      if (selectedModel && selectedModel.provider === event.payload.provider) {
-        console.log('[AI Settings] Clearing model selection for removed API key');
-        // Clear the model selection and disable AI
-        setAISettings(prev => ({
+    const unlistenApiKeyRemoved = listen<{ provider: string }>(
+      "api-key-removed",
+      async (event) => {
+        console.log(
+          "[AI Settings] API key removed for provider:",
+          event.payload.provider,
+        );
+
+        // Update local state immediately
+        setProviderApiKeys((prev) => ({
           ...prev,
-          enabled: false,
-          provider: "",
-          model: "",
-          hasApiKey: false
+          [event.payload.provider]: false,
         }));
-        
-        // Update backend to clear the selection
-        try {
-          await invoke("update_ai_settings", {
+
+        // Check if the removed key was for the currently selected model
+        const selectedModel = models.find((m) => m.id === aiSettings.model);
+        if (
+          selectedModel &&
+          selectedModel.provider === event.payload.provider
+        ) {
+          console.log(
+            "[AI Settings] Clearing model selection for removed API key",
+          );
+          // Clear the model selection and disable AI
+          setAISettings((prev) => ({
+            ...prev,
             enabled: false,
             provider: "",
-            model: ""
-          });
-        } catch (error) {
-          console.error('Failed to update backend settings:', error);
+            model: "",
+            hasApiKey: false,
+          }));
+
+          // Update backend to clear the selection
+          try {
+            await invoke("update_ai_settings", {
+              enabled: false,
+              provider: "",
+              model: "",
+            });
+          } catch (error) {
+            console.error("Failed to update backend settings:", error);
+          }
         }
-      }
-    });
+      },
+    );
 
     // Listen for formatting failures from backend and show a toast
-    const unlistenFormattingError = listen<string>('formatting-error', async (event) => {
-      const msg = (event.payload as any) || 'Formatting failed';
-      toast.error(typeof msg === 'string' ? msg : 'Formatting failed');
-    });
+    const unlistenFormattingError = listen<string>(
+      "formatting-error",
+      async (event) => {
+        const msg = (event.payload as any) || "Formatting failed";
+        toast.error(typeof msg === "string" ? msg : "Formatting failed");
+      },
+    );
 
     return () => {
-      Promise.all([unlistenReady, unlistenApiKey, unlistenApiKeyRemoved, unlistenFormattingError]).then(fns => {
-        fns.forEach(fn => fn());
+      Promise.all([
+        unlistenReady,
+        unlistenApiKey,
+        unlistenApiKeyRemoved,
+        unlistenFormattingError,
+      ]).then((fns) => {
+        fns.forEach((fn) => fn());
       });
     };
   }, [settingsLoaded]);
 
-  const handleEnhancementOptionsChange = async (newOptions: typeof enhancementOptions) => {
+  const handleEnhancementOptionsChange = async (
+    newOptions: typeof enhancementOptions,
+  ) => {
     console.log("[EnhancementOptions] Saving:", newOptions);
     const backendOptions = toBackendOptions(newOptions);
     console.log("[EnhancementOptions] Backend format:", backendOptions);
     setEnhancementOptions(newOptions);
     try {
       await invoke("update_enhancement_options", {
-        options: backendOptions
+        options: backendOptions,
       });
       console.log("[EnhancementOptions] Saved successfully");
     } catch (error) {
@@ -258,11 +338,13 @@ export function EnhancementsSection() {
       await invoke("update_ai_settings", {
         enabled,
         provider: aiSettings.provider,
-        model: aiSettings.model
+        model: aiSettings.model,
       });
 
-      setAISettings(prev => ({ ...prev, enabled }));
-      toast.success(enabled ? "AI formatting enabled" : "AI formatting disabled");
+      setAISettings((prev) => ({ ...prev, enabled }));
+      toast.success(
+        enabled ? "AI formatting enabled" : "AI formatting disabled",
+      );
     } catch (error) {
       toast.error(`Failed to update settings: ${error}`);
     }
@@ -276,19 +358,21 @@ export function EnhancementsSection() {
   const handleModelSelect = async (modelId: string, provider: string) => {
     try {
       // When selecting a model, preserve the enabled state unless the provider has no API key
-      const shouldBeEnabled = providerApiKeys[provider] ? aiSettings.enabled : false;
-      
+      const shouldBeEnabled = providerApiKeys[provider]
+        ? aiSettings.enabled
+        : false;
+
       await invoke("update_ai_settings", {
         enabled: shouldBeEnabled,
         provider: provider,
-        model: modelId
+        model: modelId,
       });
 
-      setAISettings(prev => ({
+      setAISettings((prev) => ({
         ...prev,
         provider: provider,
         model: modelId,
-        hasApiKey: providerApiKeys[provider] || false
+        hasApiKey: providerApiKeys[provider] || false,
       }));
 
       toast.success("Model selected");
@@ -300,11 +384,11 @@ export function EnhancementsSection() {
   const handleRemoveApiKey = async (provider: string) => {
     try {
       console.log(`[AI Settings] Removing API key for provider: ${provider}`);
-      
+
       // Remove the key (this also clears backend cache and emits the event)
       // The 'api-key-removed' event listener will handle all UI updates
       await removeApiKey(provider);
-      
+
       toast.success("API key removed");
     } catch (error) {
       console.error(`[AI Settings] Failed to remove API key:`, error);
@@ -313,12 +397,20 @@ export function EnhancementsSection() {
   };
 
   // Valid config is either a cached key in keyring OR backend-validated config (OpenAI no-auth)
-  const hasAnyValidConfig = aiSettings.hasApiKey || Object.values(providerApiKeys).some(v => v);
-  const selectedModelProvider = models.find(m => m.id === aiSettings.model)?.provider;
-  const hasSelectedModel = aiSettings.provider === 'openai'
-    ? Boolean(aiSettings.model)
-    : Boolean(aiSettings.model && selectedModelProvider && providerApiKeys[selectedModelProvider]);
-  const selectedModelName = models.find(m => m.id === aiSettings.model)?.name;
+  const hasAnyValidConfig =
+    aiSettings.hasApiKey || Object.values(providerApiKeys).some((v) => v);
+  const selectedModelProvider = models.find(
+    (m) => m.id === aiSettings.model,
+  )?.provider;
+  const hasSelectedModel =
+    aiSettings.provider === "openai"
+      ? Boolean(aiSettings.model)
+      : Boolean(
+          aiSettings.model &&
+            selectedModelProvider &&
+            providerApiKeys[selectedModelProvider],
+        );
+  const selectedModelName = models.find((m) => m.id === aiSettings.model)?.name;
 
   return (
     <div className="h-full flex flex-col">
@@ -332,7 +424,10 @@ export function EnhancementsSection() {
             </p>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border/50">
-            <Label htmlFor="ai-formatting" className="text-sm font-medium cursor-pointer">
+            <Label
+              htmlFor="ai-formatting"
+              className="text-sm font-medium cursor-pointer"
+            >
               AI Formatting
             </Label>
             <Switch
@@ -354,24 +449,34 @@ export function EnhancementsSection() {
               <div className="h-px bg-border/50 flex-1" />
               {selectedModelName && (
                 <span className="text-sm text-muted-foreground">
-                  Active: <span className="text-amber-600 dark:text-amber-500">{selectedModelName}</span>
+                  Active:{" "}
+                  <span className="text-amber-600 dark:text-amber-500">
+                    {selectedModelName}
+                  </span>
                 </span>
               )}
             </div>
-            
+
             <div className="grid gap-3">
               {models.map((model) => {
                 // Ollama uses OpenAI provider internally, so check similar to openai
-                const hasKey = model.provider === 'openai' || model.provider === 'ollama'
-                  ? (aiSettings.hasApiKey || providerApiKeys[model.provider] || false)
-                  : (providerApiKeys[model.provider] || false);
+                const hasKey =
+                  model.provider === "openai" || model.provider === "ollama"
+                    ? aiSettings.hasApiKey ||
+                      providerApiKeys[model.provider] ||
+                      false
+                    : providerApiKeys[model.provider] || false;
                 // For Ollama: selected when ollama is configured and model matches
                 // For OpenAI: selected when openai provider is set and has key
-                const isSelected = model.provider === 'ollama'
-                  ? (providerApiKeys['ollama'] && aiSettings.hasApiKey)
-                  : model.provider === 'openai'
-                    ? (aiSettings.provider === 'openai' && hasKey && !providerApiKeys['ollama'])
-                    : (aiSettings.model === model.id && providerApiKeys[model.provider]);
+                const isSelected =
+                  model.provider === "ollama"
+                    ? providerApiKeys["ollama"] && aiSettings.hasApiKey
+                    : model.provider === "openai"
+                      ? aiSettings.provider === "openai" &&
+                        hasKey &&
+                        !providerApiKeys["ollama"]
+                      : aiSettings.model === model.id &&
+                        providerApiKeys[model.provider];
                 return (
                   <EnhancementModelCard
                     key={model.id}
@@ -381,10 +486,10 @@ export function EnhancementsSection() {
                     onSetupApiKey={handleSetupApiKey}
                     onSelect={() => {
                       // For Ollama, open config modal if not configured, otherwise just select
-                      if (!providerApiKeys['ollama']) {
+                      if (!providerApiKeys["ollama"]) {
                         handleSetupApiKey();
                       } else {
-                        handleModelSelect(aiSettings.model, 'openai');
+                        handleModelSelect(aiSettings.model, "openai");
                       }
                     }}
                     onRemoveApiKey={() => handleRemoveApiKey(model.provider)}
@@ -417,13 +522,29 @@ export function EnhancementsSection() {
                 <div className="space-y-2 flex-1">
                   <h3 className="font-medium text-sm">Quick Setup</h3>
                   <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
-                    <li>Install Ollama from <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">ollama.ai</a></li>
-                    <li>Pull a model: <code className="bg-muted px-1 rounded text-xs">ollama pull qwen2.5:3b</code></li>
+                    <li>
+                      Install Ollama from{" "}
+                      <a
+                        href="https://ollama.ai"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-amber-600 hover:underline"
+                      >
+                        ollama.ai
+                      </a>
+                    </li>
+                    <li>
+                      Pull a model:{" "}
+                      <code className="bg-muted px-1 rounded text-xs">
+                        ollama pull qwen2.5:3b
+                      </code>
+                    </li>
                     <li>Click "Configure" on the Ollama card above</li>
                     <li>Test the connection and save</li>
                   </ol>
                   <p className="text-xs text-muted-foreground mt-3">
-                    AI formatting runs locally on your machine - no API key or internet needed.
+                    AI formatting runs locally on your machine - no API key or
+                    internet needed.
                   </p>
                 </div>
               </div>
@@ -434,24 +555,32 @@ export function EnhancementsSection() {
 
       <OllamaConfigModal
         isOpen={showOllamaConfig}
+        defaultModel={ollamaConfig.model}
+        defaultPort={ollamaConfig.port}
         onClose={() => setShowOllamaConfig(false)}
         onSubmit={async ({ model, port }) => {
           try {
             // Ollama uses the OpenAI-compatible API with no auth
             const baseUrl = `http://localhost:${port}`;
-            await saveOpenAIKeyWithConfig('', baseUrl, model, true);
+            await saveOpenAIKeyWithConfig("", baseUrl, model, true);
 
             // Enable AI with the new Ollama provider/model
             await invoke("update_ai_settings", {
               enabled: true,
-              provider: 'openai',
-              model: model
+              provider: "openai",
+              model: model,
             });
 
             // Mark Ollama as configured (uses openai provider under the hood)
-            setAISettings(prev => ({ ...prev, provider: 'openai', model: model, hasApiKey: true, enabled: true }));
-            setProviderApiKeys(prev => ({ ...prev, ollama: true }));
-            toast.success('Ollama configured and enabled');
+            setAISettings((prev) => ({
+              ...prev,
+              provider: "openai",
+              model: model,
+              hasApiKey: true,
+              enabled: true,
+            }));
+            setProviderApiKeys((prev) => ({ ...prev, ollama: true }));
+            toast.success("Ollama configured and enabled");
             setShowOllamaConfig(false);
           } catch (error) {
             toast.error(`Failed to save Ollama configuration: ${error}`);

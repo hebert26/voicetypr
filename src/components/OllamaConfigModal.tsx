@@ -31,7 +31,7 @@ const SUGGESTED_MODELS = [
 
 export function OllamaConfigModal({
   isOpen,
-  defaultModel = "qwen2.5:1.5b",
+  defaultModel = "",
   defaultPort = 11434,
   onClose,
   onSubmit,
@@ -40,19 +40,24 @@ export function OllamaConfigModal({
   const [port, setPort] = useState(defaultPort.toString());
   const [submitting, setSubmitting] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<null | { ok: boolean; message: string }>(null);
+  const [testResult, setTestResult] = useState<null | {
+    ok: boolean;
+    message: string;
+  }>(null);
   // null = not checked, true = detected, false = not detected, "unknown" = couldn't determine
-  const [ollamaDetected, setOllamaDetected] = useState<boolean | null | "unknown">(null);
+  const [ollamaDetected, setOllamaDetected] = useState<
+    boolean | null | "unknown"
+  >(null);
 
   useEffect(() => {
     if (isOpen) {
-      // Reset to unknown state - we can't reliably auto-detect without a valid model
-      // User should use "Test Connection" button to verify
-      setOllamaDetected("unknown");
-    } else {
-      // Reset state when modal closes
+      // When opening, load the saved values from props
       setModel(defaultModel);
       setPort(defaultPort.toString());
+      setOllamaDetected("unknown");
+      setTestResult(null);
+    } else {
+      // Reset state when modal closes
       setSubmitting(false);
       setTesting(false);
       setTestResult(null);
@@ -88,15 +93,22 @@ export function OllamaConfigModal({
       setOllamaDetected(true);
     } catch (e: unknown) {
       const errorMessage = String(e);
-      if (errorMessage.includes("Connection refused") || errorMessage.includes("error sending request")) {
+      if (
+        errorMessage.includes("Connection refused") ||
+        errorMessage.includes("error sending request")
+      ) {
         setTestResult({
           ok: false,
-          message: "Cannot connect to Ollama. Make sure Ollama is running (ollama serve)"
+          message:
+            "Cannot connect to Ollama. Make sure Ollama is running (ollama serve)",
         });
-      } else if (errorMessage.includes("404") || errorMessage.includes("not found")) {
+      } else if (
+        errorMessage.includes("404") ||
+        errorMessage.includes("not found")
+      ) {
         setTestResult({
           ok: false,
-          message: `Model "${model}" not found. Run: ollama pull ${model}`
+          message: `Model "${model}" not found. Run: ollama pull ${model}`,
         });
       } else {
         setTestResult({ ok: false, message: errorMessage });
@@ -129,19 +141,27 @@ export function OllamaConfigModal({
             {/* Ollama Status */}
             <div className="flex items-center gap-2 text-sm">
               {ollamaDetected === null ? (
-                <span className="text-muted-foreground">Checking Ollama status...</span>
+                <span className="text-muted-foreground">
+                  Checking Ollama status...
+                </span>
               ) : ollamaDetected === true ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span className="text-green-600 dark:text-green-400">Ollama connected successfully!</span>
+                  <span className="text-green-600 dark:text-green-400">
+                    Ollama connected successfully!
+                  </span>
                 </>
               ) : ollamaDetected === false ? (
                 <>
                   <XCircle className="h-4 w-4 text-red-500" />
-                  <span className="text-red-600 dark:text-red-400">Could not connect to Ollama</span>
+                  <span className="text-red-600 dark:text-red-400">
+                    Could not connect to Ollama
+                  </span>
                 </>
               ) : (
-                <span className="text-muted-foreground">Click "Test Connection" to verify Ollama is running</span>
+                <span className="text-muted-foreground">
+                  Click "Test Connection" to verify Ollama is running
+                </span>
               )}
             </div>
 
@@ -179,7 +199,9 @@ export function OllamaConfigModal({
 
             {/* Port Input - compact inline */}
             <div className="flex items-center gap-2">
-              <Label htmlFor="ollamaPort" className="text-sm whitespace-nowrap">Port:</Label>
+              <Label htmlFor="ollamaPort" className="text-sm whitespace-nowrap">
+                Port:
+              </Label>
               <Input
                 id="ollamaPort"
                 type="number"
@@ -191,7 +213,9 @@ export function OllamaConfigModal({
                 }}
                 className="w-24"
               />
-              <span className="text-xs text-muted-foreground">(default: 11434)</span>
+              <span className="text-xs text-muted-foreground">
+                (default: 11434)
+              </span>
             </div>
 
             {/* Setup Instructions - only show if connection failed */}
@@ -199,9 +223,30 @@ export function OllamaConfigModal({
               <div className="rounded-md border border-border/50 bg-muted/30 p-3 space-y-2">
                 <p className="text-sm font-medium">Quick Setup</p>
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Install Ollama from <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline inline-flex items-center gap-0.5">ollama.ai <ExternalLink className="h-3 w-3" /></a></li>
-                  <li>Open Terminal and run: <code className="bg-background px-1 rounded">ollama pull {model || "qwen2.5:1.5b"}</code></li>
-                  <li>Start Ollama (open the app or run <code className="bg-background px-1 rounded">ollama serve</code>)</li>
+                  <li>
+                    Install Ollama from{" "}
+                    <a
+                      href="https://ollama.ai"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-600 hover:underline inline-flex items-center gap-0.5"
+                    >
+                      ollama.ai <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </li>
+                  <li>
+                    Open Terminal and run:{" "}
+                    <code className="bg-background px-1 rounded">
+                      ollama pull {model || "qwen2.5:1.5b"}
+                    </code>
+                  </li>
+                  <li>
+                    Start Ollama (open the app or run{" "}
+                    <code className="bg-background px-1 rounded">
+                      ollama serve
+                    </code>
+                    )
+                  </li>
                   <li>Click "Test Connection" below</li>
                 </ol>
               </div>
@@ -209,7 +254,12 @@ export function OllamaConfigModal({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={submitting || testing}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={submitting || testing}
+            >
               Cancel
             </Button>
             <Button
@@ -240,11 +290,13 @@ export function OllamaConfigModal({
           </DialogFooter>
 
           {testResult && (
-            <div className={`mt-3 text-sm p-2 rounded-md ${
-              testResult.ok
-                ? "text-green-600 bg-green-500/10"
-                : "text-red-600 bg-red-500/10"
-            }`}>
+            <div
+              className={`mt-3 text-sm p-2 rounded-md ${
+                testResult.ok
+                  ? "text-green-600 bg-green-500/10"
+                  : "text-red-600 bg-red-500/10"
+              }`}
+            >
               {testResult.message}
             </div>
           )}
