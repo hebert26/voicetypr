@@ -194,14 +194,26 @@ export function EnhancementsSection() {
       const urlMatch = config.base_url.match(/:(\d+)$/);
       const port = urlMatch ? parseInt(urlMatch[1]) : 11434;
 
+      // Also get the current model from AI settings
+      const currentSettings = await invoke<AISettings>("get_ai_settings");
+
+      console.log(
+        "[loadOllamaConfig] base_url:",
+        config.base_url,
+        "port:",
+        port,
+        "model:",
+        currentSettings.model,
+      );
+
       setOllamaConfig({
-        model: aiSettings.model || "",
+        model: currentSettings.model || "",
         port,
       });
     } catch (e) {
       console.error("Failed to load Ollama config:", e);
     }
-  }, [aiSettings.model]);
+  }, []);
 
   // Load settings only once when component becomes visible
   useEffect(() => {
@@ -350,8 +362,9 @@ export function EnhancementsSection() {
     }
   };
 
-  const handleSetupApiKey = () => {
-    // Only Ollama is supported
+  const handleSetupApiKey = async () => {
+    // Load fresh config before opening modal
+    await loadOllamaConfig();
     setShowOllamaConfig(true);
   };
 
