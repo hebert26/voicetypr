@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Sparkles } from "lucide-react";
+import { FileText } from "lucide-react";
 
 interface EnhancementSettingsProps {
   settings: {
@@ -12,100 +11,62 @@ interface EnhancementSettingsProps {
   disabled?: boolean;
 }
 
-export function EnhancementSettings({ settings, onSettingsChange, disabled = false }: EnhancementSettingsProps) {
-  const presets = [
-    {
-      id: "Default",
-      icon: FileText,
-      description: "Clean text"
-    },
-    {
-      id: "Prompts",
-      label: "Prompts",
-      icon: Sparkles,
-      description: "AI prompts"
-    }
-  ];
-
-  const handlePresetChange = (preset: string) => {
-    if (["Default", "Prompts"].includes(preset)) {
-      onSettingsChange({
-        ...settings,
-        preset: preset as "Default" | "Prompts"
-      });
-    }
-  };
-
+export function EnhancementSettings({
+  settings,
+  onSettingsChange,
+  disabled = false,
+}: EnhancementSettingsProps) {
   const handleCustomInstructionsChange = (value: string) => {
     onSettingsChange({
       ...settings,
-      customInstructions: value
+      customInstructions: value,
     });
   };
 
   const handleVocabularyChange = (value: string) => {
     // Split by newlines and filter empty lines
-    const entries = value.split('\n').filter(line => line.trim() !== '');
+    const entries = value.split("\n").filter((line) => line.trim() !== "");
     onSettingsChange({
       ...settings,
-      customVocabulary: entries
+      customVocabulary: entries,
     });
   };
 
   // Convert array back to newline-separated string for display
-  const vocabularyText = settings.customVocabulary?.join('\n') || '';
-
+  const vocabularyText = settings.customVocabulary?.join("\n") || "";
 
   return (
-    <div className={`space-y-6 ${disabled ? 'opacity-50' : ''}`}>
-      {/* Enhancement Mode */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          {presets.map((preset) => {
-            const Icon = preset.icon;
-            const isSelected = settings.preset === preset.id;
-            
-            return (
-              <Button
-                key={preset.id}
-                variant={isSelected ? "default" : "outline"}
-                size="sm"
-                className={`gap-2 ${disabled ? 'cursor-not-allowed' : ''}`}
-                onClick={() => !disabled && handlePresetChange(preset.id)}
-                disabled={disabled}
-              >
-                <Icon className="h-4 w-4" />
-                {preset.label}
-              </Button>
-            );
-          })}
-        </div>
-        
-        {/* Mode description */}
-        <p className="text-sm text-muted-foreground">
-          {settings.preset === "Default" && "Format transcription with grammar, spelling, punctuation, and semantic corrections"}
-          {settings.preset === "Prompts" && "Transform speech into clear, actionable AI prompts"}
-        </p>
+    <div className={`space-y-6 ${disabled ? "opacity-50" : ""}`}>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <FileText className="h-4 w-4" />
+        <span>Formatting is always meaning-preserving cleanup.</span>
       </div>
 
       {/* Custom Instructions */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Custom Instructions (optional)</label>
+        <label className="text-sm font-medium">
+          Custom Instructions (optional)
+        </label>
         <Textarea
           placeholder="Add custom instructions, e.g., 'Make sure the text makes sense, fix grammar, use formal tone'"
           value={settings.customInstructions || ""}
-          onChange={(e) => !disabled && handleCustomInstructionsChange(e.target.value)}
+          onChange={(e) =>
+            !disabled && handleCustomInstructionsChange(e.target.value)
+          }
           disabled={disabled}
           className="min-h-[80px] resize-none"
         />
         <p className="text-xs text-muted-foreground">
-          These instructions will be added to the AI prompt along with your selected preset.
+          These instructions will be added to the AI prompt along with your
+          selected preset.
         </p>
       </div>
 
       {/* Vocabulary Corrections */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Vocabulary Corrections (optional)</label>
+        <label className="text-sm font-medium">
+          Vocabulary Corrections (optional)
+        </label>
         <Textarea
           placeholder={`Add pronunciation corrections, one per line:\nko → code\nlama → llama\njavasript → JavaScript`}
           value={vocabularyText}
