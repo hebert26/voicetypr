@@ -22,7 +22,12 @@ export function RecordingPill() {
 
   // Debug re-renders
   useEffect(() => {
-    console.log("RecordingPill: Component re-rendered, feedbackMessage:", feedbackMessage, "ref:", feedbackMessageRef.current);
+    console.log(
+      "RecordingPill: Component re-rendered, feedbackMessage:",
+      feedbackMessage,
+      "ref:",
+      feedbackMessageRef.current,
+    );
   });
 
   const isRecording = recording.state === "recording";
@@ -40,7 +45,15 @@ export function RecordingPill() {
 
   // Helper function to set feedback message with auto-hide
   const setFeedbackWithTimeout = (message: string, timeout: number) => {
-    console.log("RecordingPill: Setting feedback message:", message, "for", timeout, "ms", "mountedRef:", mountedRef.current);
+    console.log(
+      "RecordingPill: Setting feedback message:",
+      message,
+      "for",
+      timeout,
+      "ms",
+      "mountedRef:",
+      mountedRef.current,
+    );
 
     // Clear any existing timer
     if (feedbackTimerRef.current) {
@@ -69,9 +82,9 @@ export function RecordingPill() {
   };
 
   // Use settings from context
-  const compactRecordingStatus = useSetting('compact_recording_status');
-  const recordingMode = useSetting('recording_mode');
-  const isPushToTalk = recordingMode === 'push_to_talk';
+  const compactRecordingStatus = useSetting("compact_recording_status");
+  const recordingMode = useSetting("recording_mode");
+  const isPushToTalk = recordingMode === "push_to_talk";
 
   useEffect(() => {
     setIsCompact(compactRecordingStatus !== false);
@@ -100,9 +113,12 @@ export function RecordingPill() {
     // Listen for empty transcription
     unlisteners.push(
       listen<string>("transcription-empty", (event) => {
-        console.log("RecordingPill: Received transcription-empty event", event.payload);
+        console.log(
+          "RecordingPill: Received transcription-empty event",
+          event.payload,
+        );
         setFeedbackWithTimeout(event.payload, 2000);
-      })
+      }),
     );
 
     // Listen for recording stopped due to silence
@@ -110,36 +126,48 @@ export function RecordingPill() {
       listen("recording-stopped-silence", () => {
         console.log("RecordingPill: Received recording-stopped-silence event");
         setFeedbackWithTimeout("No sound detected", 2000);
-      })
+      }),
     );
 
     // Listen for ESC first press from backend
     unlisteners.push(
       listen<string>("esc-first-press", (event) => {
-        console.log("RecordingPill: Received esc-first-press event", event.payload);
+        console.log(
+          "RecordingPill: Received esc-first-press event",
+          event.payload,
+        );
         setFeedbackWithTimeout(event.payload, 3000);
-      })
+      }),
     );
 
     // Listen for recording errors
     unlisteners.push(
       listen<string>("recording-error", (event) => {
-        setFeedbackWithTimeout(event.payload || "Recording error occurred", 3000);
-      })
+        setFeedbackWithTimeout(
+          event.payload || "Recording error occurred",
+          3000,
+        );
+      }),
     );
 
     // Listen for transcription errors
     unlisteners.push(
       listen<string>("transcription-error", (event) => {
-        setFeedbackWithTimeout(event.payload || "Transcription error occurred", 3000);
-      })
+        setFeedbackWithTimeout(
+          event.payload || "Transcription error occurred",
+          3000,
+        );
+      }),
     );
 
     // Listen for no models error
     unlisteners.push(
-      listen<{ title: string; message: string; action: string }>("no-models-error", (event) => {
-        setFeedbackWithTimeout(event.payload.message, 4000);
-      })
+      listen<{ title: string; message: string; action: string }>(
+        "no-models-error",
+        (event) => {
+          setFeedbackWithTimeout(event.payload.message, 4000);
+        },
+      ),
     );
 
     // Listen for enhancing events
@@ -147,32 +175,38 @@ export function RecordingPill() {
       listen("enhancing-started", () => {
         console.log("RecordingPill: Received enhancing-started event");
         setIsEnhancing(true);
-      })
+      }),
     );
 
     unlisteners.push(
       listen("enhancing-completed", () => {
         console.log("RecordingPill: Received enhancing-completed event");
         setIsEnhancing(false);
-      })
+      }),
     );
 
     unlisteners.push(
       listen<string>("enhancing-failed", (event) => {
-        console.log("RecordingPill: Received enhancing-failed event", event.payload);
+        console.log(
+          "RecordingPill: Received enhancing-failed event",
+          event.payload,
+        );
         setIsEnhancing(false);
         // Show short message only
         setFeedbackWithTimeout("Formatting failed", 2000);
-      })
+      }),
     );
 
     // Listen for generic formatting error event and show short message
     unlisteners.push(
       listen<string>("formatting-error", (event) => {
-        console.log("RecordingPill: Received formatting-error event", event.payload);
+        console.log(
+          "RecordingPill: Received formatting-error event",
+          event.payload,
+        );
         setIsEnhancing(false);
         setFeedbackWithTimeout("Formatting failed", 2000);
-      })
+      }),
     );
 
     // Listen for paste errors (accessibility permission)
@@ -180,14 +214,13 @@ export function RecordingPill() {
       listen<string>("paste-error", (event) => {
         console.log("RecordingPill: Received paste-error event", event.payload);
         setFeedbackWithTimeout(event.payload, 4000);
-      })
+      }),
     );
 
     return () => {
       unlisteners.forEach((unlisten) => unlisten.then((fn) => fn()));
     };
   }, []);
-
 
   // Handle click to stop recording
   // const handleClick = async () => {
@@ -204,7 +237,6 @@ export function RecordingPill() {
   return (
     <div className="fixed inset-0 flex items-end justify-center pointer-events-none">
       <div className="relative pb-4">
-
         {/* Feedback message as overlay */}
         {feedbackMessage && (
           <div className="absolute inset-x-0 bottom-full mb-2 flex justify-center pointer-events-none z-50">
@@ -216,20 +248,19 @@ export function RecordingPill() {
         )}
 
         {/* Show button if actively recording/transcribing/enhancing, or invisible placeholder for feedback */}
-        {(isRecording || isTranscribing || isEnhancing) ? (
+        {isRecording || isTranscribing || isEnhancing ? (
           <Button
             // onClick={handleClick}
-            variant="default"
-            className={`${
-              isCompact
-                ? "rounded-full !p-1 w-10 h-10 shadow-none"
-                : "rounded-xl !p-4 gap-2"
-            } flex items-center justify-center`}
+            variant="ghost"
+            className={`${isCompact ? "rounded-full !p-1 w-10 h-10" : "rounded-2xl !px-4 !py-2.5 gap-2"} pill-surface ${isEnhancing ? "pill-processing ring-amber-300/35" : isTranscribing ? "pill-processing ring-sky-300/35" : "pill-animate ring-emerald-300/35"} ring-1 text-white flex items-center justify-center`}
             // aria-readonly={isTranscribing}
           >
             {isEnhancing ? (
               <>
-                <Sparkles size={isCompact ? 20 : 16} className="animate-pulse" />
+                <Sparkles
+                  size={isCompact ? 20 : 16}
+                  className="animate-pulse"
+                />
                 {!isCompact && "Enhancing"}
               </>
             ) : isTranscribing ? (
@@ -239,14 +270,19 @@ export function RecordingPill() {
               </>
             ) : (
               <>
-                <AudioWaveAnimation audioLevel={audioLevel} className={isCompact ? "scale-80" : ""} />
+                <AudioWaveAnimation
+                  audioLevel={audioLevel}
+                  className={isCompact ? "scale-80" : ""}
+                />
                 {!isCompact && (isPushToTalk ? "Release to stop" : "Listening")}
               </>
             )}
           </Button>
         ) : (
           /* Invisible placeholder to maintain position for feedback messages */
-          <div className={`${isCompact ? "w-10 h-10" : "h-14"} invisible bg-transparent`} />
+          <div
+            className={`${isCompact ? "w-10 h-10" : "h-14"} invisible bg-transparent`}
+          />
         )}
       </div>
     </div>

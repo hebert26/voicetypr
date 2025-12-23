@@ -150,9 +150,9 @@ impl WindowManager {
                 // Window is still valid, show it
                 existing_window.show().map_err(|e| e.to_string())?;
 
-                // Always position at center-bottom
+                // Always position at center-bottom on the active monitor
                 use tauri::LogicalPosition;
-                let (x, y) = self.calculate_center_position();
+                let (x, y) = self.calculate_pill_position();
                 let _ = existing_window.set_position(LogicalPosition::new(x, y));
 
                 log::debug!("Showing existing pill window from cache");
@@ -173,9 +173,9 @@ impl WindowManager {
 
                 existing_window.show().map_err(|e| e.to_string())?;
 
-                // Always position at center-bottom
+                // Always position at center-bottom on the active monitor
                 use tauri::LogicalPosition;
-                let (x, y) = self.calculate_center_position();
+                let (x, y) = self.calculate_pill_position();
                 let _ = existing_window.set_position(LogicalPosition::new(x, y));
 
                 log::debug!("Found and showing existing pill window from Tauri");
@@ -186,8 +186,8 @@ impl WindowManager {
         // No window exists, create new one
         log::info!("Creating new pill window (lazy-loaded on recording start)");
 
-        // Always use fixed center-bottom position
-        let (position_x, position_y) = self.calculate_center_position();
+        // Always use fixed center-bottom position on the active monitor
+        let (position_x, position_y) = self.calculate_pill_position();
         log::info!(
             "Positioning pill at center-bottom: ({}, {})",
             position_x,
@@ -524,90 +524,62 @@ impl WindowManager {
         }
     }
 
-    /// Calculate center bottom position for pill window
-    fn calculate_center_position(&self) -> (f64, f64) {
-        // Try to get monitor from main window
-        if let Some(main_window) = self.get_main_window() {
-            if let Ok(Some(monitor)) = main_window.current_monitor() {
-                let size = monitor.size();
-                let scale = monitor.scale_factor();
-                let width = size.width as f64 / scale;
-                let height = size.height as f64 / scale;
+    fn calculate_pill_position(&self) -> (f64, f64) {
+        const PILL_WIDTH: f64 = 350.0;
+        const PILL_HEIGHT: f64 = 150.0;
+        const BOTTOM_MARGIN: f64 = 32.0;
+        const EDGE_MARGIN: f64 = 16.0;
 
-                // Center bottom position with offset
-                let pill_width = 350.0;
-                let pill_height = 150.0;
-                let bottom_offset = 25.0; // Closer to bottom of screen
+        if let Some(monitor) = self.get_active_monitor() {
+            let scale = monitor.scale_factor();
+            let work_area = monitor.work_area();
+            let work_x = work_area.position.x as f64 / scale;
+            let work_y = work_area.position.y as f64 / scale;
+            let work_width = work_area.size.width as f64 / scale;
+            let work_height = work_area.size.height as f64 / scale;
 
-                let x = (width - pill_width) / 2.0;
-                let y = height - pill_height - bottom_offset;
+            let mut x = work_x + (work_width - PILL_WIDTH) / 2.0;
+            let mut y = work_y + work_height - PILL_HEIGHT - BOTTOM_MARGIN;
 
-                log::info!(
-                    "Calculated pill position: ({}, {}) on {}x{} screen",
-                    x,
-                    y,
-                    width,
-                    height
-                );
-                (x, y)
-            } else {
-                log::warn!("Could not get monitor from main window, trying primary monitor");
-                // Try to get primary monitor
-                if let Ok(Some(monitor)) = self.app_handle.primary_monitor() {
-                    let size = monitor.size();
-                    let scale = monitor.scale_factor();
-                    let width = size.width as f64 / scale;
-                    let height = size.height as f64 / scale;
+            let min_x = work_x + EDGE_MARGIN;
+            let max_x = (work_x + work_width - PILL_WIDTH - EDGE_MARGIN).max(min_x);
+            let min_y = work_y + EDGE_MARGIN;
+            let max_y = (work_y + work_height - PILL_HEIGHT - EDGE_MARGIN).max(min_y);
 
-                    let pill_width = 300.0;
-                    let pill_height = 150.0;
-                    let bottom_offset = 10.0;
+            x = x.clamp(min_x, max_x);
+            y = y.clamp(min_y, max_y);
 
-                    let x = (width - pill_width) / 2.0;
-                    let y = height - pill_height - bottom_offset;
+            log::info!(
+                "Calculated pill position: ({}, {}) within work area {}x{}",
+                x,
+                y,
+                work_width,
+                work_height
+            );
+            return (x, y);
+        }
 
-                    log::info!(
-                        "Using primary monitor: ({}, {}) on {}x{} screen",
-                        x,
-                        y,
-                        width,
-                        height
-                    );
-                    (x, y)
-                } else {
-                    log::error!("Could not get any monitor, using safe defaults");
-                    // Safe default: try to center on common screen sizes
-                    (100.0, 400.0)
-                }
-            }
-        } else {
-            log::warn!("Main window not available, using app handle to get primary monitor");
-            // Try to get primary monitor directly
-            if let Ok(Some(monitor)) = self.app_handle.primary_monitor() {
-                let size = monitor.size();
-                let scale = monitor.scale_factor();
-                let width = size.width as f64 / scale;
-                let height = size.height as f64 / scale;
+        log::error!("Could not resolve active monitor, using safe defaults");
+        (100.0, 400.0)
+    }
 
-                let pill_width = 600.0;
-                let pill_height = 300.0;
-                let bottom_offset = 20.0;
-
-                let x = (width - pill_width) / 2.0;
-                let y = height - pill_height - bottom_offset;
-
-                log::info!(
-                    "Using primary monitor (no main window): ({}, {}) on {}x{} screen",
-                    x,
-                    y,
-                    width,
-                    height
-                );
-                (x, y)
-            } else {
-                log::error!("Could not get any monitor info, using safe defaults");
-                (100.0, 400.0)
+    fn get_active_monitor(&self) -> Option<tauri::Monitor> {
+        if let Ok(cursor) = self.app_handle.cursor_position() {
+            if let Ok(Some(monitor)) = self.app_handle.monitor_from_point(cursor.x, cursor.y) {
+                return Some(monitor);
             }
         }
+
+        if let Some(main_window) = self.get_main_window() {
+            if let Ok(Some(monitor)) = main_window.current_monitor() {
+                return Some(monitor);
+            }
+        }
+
+        if let Ok(Some(monitor)) = self.app_handle.primary_monitor() {
+            return Some(monitor);
+        }
+
+        None
     }
 }
