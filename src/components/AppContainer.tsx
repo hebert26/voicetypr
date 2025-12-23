@@ -17,7 +17,7 @@ import { loadApiKeysToCache } from "@/utils/keyring";
 interface ErrorEventPayload {
   title?: string;
   message: string;
-  severity?: 'info' | 'warning' | 'error';
+  severity?: "info" | "warning" | "error";
   actions?: string[];
   details?: string;
   hotkey?: string;
@@ -30,7 +30,8 @@ export function AppContainer() {
   const [activeSection, setActiveSection] = useState<string>("overview");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { settings, refreshSettings } = useSettings();
-  const { checkAccessibilityPermission, checkMicrophonePermission } = useReadiness();
+  const { checkAccessibilityPermission, checkMicrophonePermission } =
+    useReadiness();
 
   // Use the model management context for onboarding
   const modelManagement = useModelManagementContext();
@@ -50,7 +51,7 @@ export function AppContainer() {
         // Run cleanup if enabled
         if (settings?.transcription_cleanup_days) {
           await invoke("cleanup_old_transcriptions", {
-            days: settings.transcription_cleanup_days
+            days: settings.transcription_cleanup_days,
           });
         }
 
@@ -97,39 +98,45 @@ export function AppContainer() {
         });
 
         registerEvent<string>("parakeet-unavailable", (message) => {
-          const description = typeof message === "string" && message.trim().length > 0
-            ? message
-            : "Parakeet is unavailable on this Mac. Please reinstall VoiceTypr or remove the quarantine flag.";
+          const description =
+            typeof message === "string" && message.trim().length > 0
+              ? message
+              : "Parakeet is unavailable on this Mac. Please reinstall Verity or remove the quarantine flag.";
           console.error("Parakeet unavailable:", description);
           toast.error("Parakeet Unavailable", {
             description,
-            duration: 8000
+            duration: 8000,
           });
         });
 
         // Listen for license-required event and navigate to License section
         registerEvent<{ title: string; message: string; action?: string }>(
-          "license-required", 
+          "license-required",
           (data) => {
-            console.log("License required event received in AppContainer:", data);
+            console.log(
+              "License required event received in AppContainer:",
+              data,
+            );
             // Navigate to License section to show license management
             setActiveSection("license");
             // Show a toast to inform the user
             toast.error(data.title || "License Required", {
-              description: data.message || "Please purchase or restore a license to continue",
-              duration: 5000
+              description:
+                data.message ||
+                "Please purchase or restore a license to continue",
+              duration: 5000,
             });
-          }
+          },
         );
 
         // Listen for no models error (when trying to record without any models)
         registerEvent<ErrorEventPayload>("no-models-error", (data) => {
           console.error("No models available:", data);
-          toast.error(data.title || 'No Models Available', {
+          toast.error(data.title || "No Models Available", {
             description:
               data.message ||
-              'Connect a cloud provider or download a local model in Models before recording.',
-            duration: 8000
+              "Connect a cloud provider or download a local model in Models before recording.",
+            duration: 8000,
           });
         });
 
@@ -155,10 +162,17 @@ export function AppContainer() {
   // Check permissions only when transitioning from onboarding to dashboard
   useEffect(() => {
     // Only refresh if we just completed onboarding and are now showing dashboard
-    if (!showOnboarding && hasJustCompletedOnboarding.current && settings?.onboarding_completed) {
+    if (
+      !showOnboarding &&
+      hasJustCompletedOnboarding.current &&
+      settings?.onboarding_completed
+    ) {
       hasJustCompletedOnboarding.current = false;
 
-      Promise.all([checkAccessibilityPermission(), checkMicrophonePermission()]).then(() => {
+      Promise.all([
+        checkAccessibilityPermission(),
+        checkMicrophonePermission(),
+      ]).then(() => {
         console.log("Permissions refreshed after onboarding completion");
       });
     }
@@ -166,7 +180,7 @@ export function AppContainer() {
     showOnboarding,
     settings?.onboarding_completed,
     checkAccessibilityPermission,
-    checkMicrophonePermission
+    checkMicrophonePermission,
   ]);
 
   // Onboarding View
@@ -188,9 +202,9 @@ export function AppContainer() {
   // Main App Layout
   return (
     <SidebarProvider>
-      <Sidebar 
-        activeSection={activeSection} 
-        onSectionChange={setActiveSection} 
+      <Sidebar
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
       />
       <SidebarInset>
         <TabContainer activeSection={activeSection} />

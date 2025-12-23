@@ -423,9 +423,9 @@ async fn build_tray_menu<R: tauri::Runtime>(
         true,
         None::<&str>,
     )?;
-    let restart_i = MenuItem::with_id(app, "restart", "Restart VoiceTypr", true, None::<&str>)?;
+    let restart_i = MenuItem::with_id(app, "restart", "Restart Verity", true, None::<&str>)?;
     let separator2 = PredefinedMenuItem::separator(app)?;
-    let quit_i = MenuItem::with_id(app, "quit", "Quit VoiceTypr", true, None::<&str>)?;
+    let quit_i = MenuItem::with_id(app, "quit", "Quit Verity", true, None::<&str>)?;
 
     let mut menu_builder = MenuBuilder::new(app);
     menu_builder = menu_builder.item(&status_item).item(&separator_status);
@@ -1279,7 +1279,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
             let _tray = TrayIconBuilder::with_id("main")
                 .icon(tray_icon)
-                .tooltip("VoiceTypr")
+                .tooltip("Verity")
                 .menu(&menu)
                 .on_menu_event(move |app, event| {
                     log::info!("Tray menu event: {:?}", event.id);
@@ -1853,7 +1853,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 ("stage", "application_run"),
                 ("total_startup_time_ms", &app_start.elapsed().as_millis().to_string().as_str())
             ]);
-            eprintln!("VoiceTypr failed to start: {}", e);
+            eprintln!("Verity failed to start: {}", e);
             Box::new(e)
         })?;
 

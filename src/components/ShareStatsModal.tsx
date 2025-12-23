@@ -26,7 +26,11 @@ interface ShareStatsModalProps {
   };
 }
 
-export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalProps) {
+export function ShareStatsModal({
+  open,
+  onOpenChange,
+  stats,
+}: ShareStatsModalProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copied, setCopied] = useState(false);
   const [imageDataUrl, setImageDataUrl] = useState<string>("");
@@ -63,10 +67,15 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
 
     // Optimize for text quality
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingQuality = "high";
 
     // Create clean gradient background
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    const gradient = ctx.createLinearGradient(
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
     gradient.addColorStop(0, "#0f0f0f");
     gradient.addColorStop(1, "#1a1a1a");
 
@@ -74,17 +83,23 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Title at the top - scaled up
-    ctx.font = "bold 96px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.font =
+      "bold 96px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
-    ctx.fillText("My VoiceTypr Stats", canvas.width / 2, 200);
+    ctx.fillText("My Verity Stats", canvas.width / 2, 200);
 
     // Best streak above the grid (if there's a longest streak)
     if (stats.longestStreak > 0) {
-      ctx.font = "bold 72px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.font =
+        "bold 72px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
-      ctx.fillText(`🔥 Best Streak: ${stats.longestStreak} Days`, canvas.width / 2, 360);
+      ctx.fillText(
+        `🔥 Best Streak: ${stats.longestStreak} Days`,
+        canvas.width / 2,
+        360,
+      );
     }
 
     // 2x2 Grid of cards - scaled up
@@ -99,23 +114,23 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
       {
         label: "Transcriptions",
         value: stats.totalTranscriptions.toString(),
-        subtitle: "total"
+        subtitle: "total",
       },
       {
         label: "Words Captured",
         value: stats.totalWords.toLocaleString(),
-        subtitle: `${stats.avgLength} avg`
+        subtitle: `${stats.avgLength} avg`,
       },
       {
         label: "Time Saved",
         value: stats.timeSavedDisplay,
-        subtitle: "from typing"
+        subtitle: "from typing",
       },
       {
         label: "Productivity",
         value: `${stats.productivityScore}%`,
-        subtitle: "this week"
-      }
+        subtitle: "this week",
+      },
     ];
 
     // Draw cards in 2x2 grid
@@ -135,20 +150,23 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
       ctx.stroke();
 
       // Card label - scaled up
-      ctx.font = "48px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.font =
+        "48px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
       ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
       ctx.textAlign = "center";
-      ctx.fillText(card.label, x + cardWidth/2, y + 90);
+      ctx.fillText(card.label, x + cardWidth / 2, y + 90);
 
       // Card value - MUCH BIGGER
-      ctx.font = "bold 112px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.font =
+        "bold 112px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(card.value, x + cardWidth/2, y + 220);
+      ctx.fillText(card.value, x + cardWidth / 2, y + 220);
 
       // Card subtitle - scaled up
-      ctx.font = "40px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.font =
+        "40px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
       ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-      ctx.fillText(card.subtitle, x + cardWidth/2, y + 290);
+      ctx.fillText(card.subtitle, x + cardWidth / 2, y + 290);
     });
 
     // // Current Streak at the bottom - scaled up
@@ -164,7 +182,7 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
     ctx.font = "56px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
     ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
     ctx.textAlign = "center";
-    ctx.fillText("voicetypr.com", canvas.width / 2, canvas.height - 80);
+    ctx.fillText("Verity", canvas.width / 2, canvas.height - 80);
 
     // Convert canvas to data URL
     const dataUrl = canvas.toDataURL("image/png");
@@ -175,11 +193,11 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
     if (!canvasRef.current || !imageDataUrl || isCopying) return;
 
     setIsCopying(true);
-    
+
     try {
       // Use Tauri's clipboard API for system-level copy
       await invoke("copy_image_to_clipboard", {
-        imageDataUrl: imageDataUrl
+        imageDataUrl: imageDataUrl,
       });
 
       setCopied(true);
@@ -197,30 +215,32 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
     if (!imageDataUrl) return;
 
     try {
-      const fileName = `voicetypr-stats-${Date.now()}.png`;
+      const fileName = `verity-stats-${Date.now()}.png`;
 
       // Use Tauri's save dialog to let user choose location
-      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { save } = await import("@tauri-apps/plugin-dialog");
       const filePath = await save({
         defaultPath: fileName,
-        filters: [{
-          name: 'Image',
-          extensions: ['png']
-        }]
+        filters: [
+          {
+            name: "Image",
+            extensions: ["png"],
+          },
+        ],
       });
 
       if (filePath) {
         // Use the Rust backend to save the file (best practice)
         await invoke("save_image_to_file", {
           imageDataUrl: imageDataUrl,
-          filePath: filePath
+          filePath: filePath,
         });
       }
     } catch (err) {
       console.error("Failed to download image:", err);
       // Fallback to browser download
       const link = document.createElement("a");
-      link.download = `voicetypr-stats-${Date.now()}.png`;
+      link.download = `verity-stats-${Date.now()}.png`;
       link.href = imageDataUrl;
       document.body.appendChild(link);
       link.click();
@@ -242,7 +262,9 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
               <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Generating stats image...</span>
+                  <span className="text-sm text-muted-foreground">
+                    Generating stats image...
+                  </span>
                 </div>
               </div>
             )}
@@ -260,7 +282,7 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
               disabled={isCopying || !imageDataUrl}
               className={cn(
                 "gap-2 min-w-[120px]",
-                copied && "bg-green-600 hover:bg-green-600"
+                copied && "bg-green-600 hover:bg-green-600",
               )}
             >
               {isCopying ? (
@@ -280,11 +302,7 @@ export function ShareStatsModal({ open, onOpenChange, stats }: ShareStatsModalPr
                 </>
               )}
             </Button>
-            <Button
-              onClick={downloadImage}
-              variant="outline"
-              className="gap-2"
-            >
+            <Button onClick={downloadImage} variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Download
             </Button>

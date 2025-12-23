@@ -335,7 +335,7 @@ impl ParakeetManager {
 
     fn friendly_spawn_message(details: &str) -> String {
         format!(
-            "Parakeet is unavailable. Please reinstall VoiceTypr or remove the quarantine flag by running `xattr -dr com.apple.quarantine /Applications/VoiceTypr.app`. Details: {}",
+            "Parakeet is unavailable. Please reinstall Verity or remove the quarantine flag by running `xattr -dr com.apple.quarantine /Applications/Verity.app`. Details: {}",
             details
         )
     }

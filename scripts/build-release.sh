@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build VoiceTypr release bundle for macOS
+# Build Verity release bundle for macOS
 # This creates a .app bundle (skips DMG for local builds)
 
 set -e  # Exit on error
@@ -12,19 +12,20 @@ if [ "$EUID" -eq 0 ]; then
     sleep 5
 fi
 
-echo "🔧 Building VoiceTypr release..."
+echo "🔧 Building Verity release..."
 echo ""
 
 # Stop the app if running
-echo "🛑 Stopping VoiceTypr if running..."
+echo "🛑 Stopping Verity if running..."
 pkill -9 voicetypr 2>/dev/null || true
 pkill -9 VoiceTypr 2>/dev/null || true
+pkill -9 Verity 2>/dev/null || true
 sleep 1
 
 # Remove old version from Applications folder
-if [ -d "/Applications/VoiceTypr.app" ]; then
+if [ -d "/Applications/Verity.app" ]; then
     echo "🗑️  Removing old version from /Applications..."
-    rm -rf "/Applications/VoiceTypr.app"
+    rm -rf "/Applications/Verity.app"
 fi
 
 # Navigate to project root
@@ -65,9 +66,9 @@ echo ""
 
 # Copy to Applications folder
 echo "📦 Installing to /Applications..."
-cp -R src-tauri/target/release/bundle/macos/VoiceTypr.app /Applications/
+cp -R src-tauri/target/release/bundle/macos/Verity.app /Applications/
 
-echo "🚀 VoiceTypr installed to /Applications"
+echo "🚀 Verity installed to /Applications"
 echo ""
-echo "📍 Starting VoiceTypr..."
-open /Applications/VoiceTypr.app
+echo "📍 Starting Verity..."
+open /Applications/Verity.app

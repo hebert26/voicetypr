@@ -173,7 +173,10 @@ async fn resolve_engine_for_model(
     match engine_hint.map(|e| e.to_lowercase()) {
         Some(ref engine) if engine == "soniox" => {
             // Cloud transcription services are disabled for offline-only operation
-            Err("Cloud transcription is disabled. Please use a local Whisper or Parakeet model.".to_string())
+            Err(
+                "Cloud transcription is disabled. Please use a local Whisper or Parakeet model."
+                    .to_string(),
+            )
         }
         Some(ref engine) if engine == "parakeet" => {
             let status = parakeet_manager
@@ -1003,7 +1006,7 @@ pub async fn stop_recording(
                     &app,
                     &audio_path,
                     "No speech recognition models installed",
-                    "Please download at least one speech recognition model from Models to use VoiceTypr.",
+                    "Please download at least one speech recognition model from Models to use Verity.",
                 )
                 .await;
             }
@@ -2110,7 +2113,10 @@ async fn soniox_transcribe_async(
     _wav_path: &Path,
     _language: Option<&str>,
 ) -> Result<String, String> {
-    Err("Cloud transcription is disabled. Please use a local Whisper or Parakeet model.".to_string())
+    Err(
+        "Cloud transcription is disabled. Please use a local Whisper or Parakeet model."
+            .to_string(),
+    )
 }
 
 #[tauri::command]

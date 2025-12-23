@@ -2,11 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Check,
-  Shield,
-  WifiOff
-} from "lucide-react";
+import { Check, Shield, WifiOff } from "lucide-react";
 
 export function AccountSection() {
   return (
@@ -17,7 +13,7 @@ export function AccountSection() {
           <div>
             <h1 className="text-2xl font-semibold">License</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              VoiceTypr License Status
+              Verity License Status
             </p>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/10">
@@ -51,7 +47,7 @@ export function AccountSection() {
                   </div>
                   <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                      VoiceTypr Pro Active
+                      Verity Pro Active
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
                       All features unlocked - fully offline and private
@@ -71,8 +67,9 @@ export function AccountSection() {
                       Privacy Mode
                     </p>
                     <p className="text-xs text-blue-800 dark:text-blue-300">
-                      This app runs entirely offline. No data is sent to external servers.
-                      All transcription happens locally on your device.
+                      This app runs entirely offline. No data is sent to
+                      external servers. All transcription happens locally on
+                      your device.
                     </p>
                   </div>
                 </div>

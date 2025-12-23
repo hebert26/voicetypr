@@ -11,7 +11,18 @@ import { isMacOS } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-shell";
-import { CheckCircle, ChevronLeft, ChevronRight, Info, Keyboard, Loader2, Mic, Zap, HardDrive, Star } from "lucide-react";
+import {
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Keyboard,
+  Loader2,
+  Mic,
+  Zap,
+  HardDrive,
+  Star,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -31,34 +42,48 @@ interface PermissionState {
 
 export const OnboardingDesktop = function OnboardingDesktop({
   onComplete,
-  modelManagement
+  modelManagement,
 }: OnboardingDesktopProps) {
   const { settings, updateSettings } = useSettings();
   const {
     hasPermission: hasMicPermission,
     checkPermission: checkMicPermission,
-    requestPermission: requestMicPermission
+    requestPermission: requestMicPermission,
   } = useMicrophonePermission();
   const {
     hasPermission: hasAccessPermission,
     checkPermission: checkAccessPermission,
-    requestPermission: requestAccessPermission
+    requestPermission: requestAccessPermission,
   } = useAccessibilityPermission();
 
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
-  const [hotkey, setHotkey] = useState(settings?.hotkey || "CommandOrControl+Shift+Space");
+  const [hotkey, setHotkey] = useState(
+    settings?.hotkey || "CommandOrControl+Shift+Space",
+  );
   const [isRequesting, setIsRequesting] = useState<string | null>(null);
-  const [checkingPermissions, setCheckingPermissions] = useState<Set<string>>(new Set());
+  const [checkingPermissions, setCheckingPermissions] = useState<Set<string>>(
+    new Set(),
+  );
   const [isEditingHotkey, setIsEditingHotkey] = useState(false);
 
   // Convert hook states to onboarding format
   const permissions = {
     microphone: {
-      status: hasMicPermission === null ? "checking" : hasMicPermission ? "granted" : "denied"
+      status:
+        hasMicPermission === null
+          ? "checking"
+          : hasMicPermission
+            ? "granted"
+            : "denied",
     } as PermissionState,
     accessibility: {
-      status: hasAccessPermission === null ? "checking" : hasAccessPermission ? "granted" : "denied"
-    } as PermissionState
+      status:
+        hasAccessPermission === null
+          ? "checking"
+          : hasAccessPermission
+            ? "granted"
+            : "denied",
+    } as PermissionState,
   };
 
   // Get model management from props
@@ -70,7 +95,7 @@ export const OnboardingDesktop = function OnboardingDesktop({
     loadModels,
     downloadModel,
     cancelDownload,
-    isLoading
+    isLoading,
   } = modelManagement;
 
   // Define steps based on platform
@@ -81,13 +106,13 @@ export const OnboardingDesktop = function OnboardingDesktop({
         { id: "permissions" as const },
         { id: "models" as const },
         { id: "setup" as const },
-        { id: "success" as const }
+        { id: "success" as const },
       ]
     : [
         { id: "welcome" as const },
         { id: "models" as const },
         { id: "setup" as const },
-        { id: "success" as const }
+        { id: "success" as const },
       ];
 
   const currentIndex = steps.findIndex((s) => s.id === currentStep);
@@ -113,15 +138,20 @@ export const OnboardingDesktop = function OnboardingDesktop({
   useEffect(() => {
     // Only auto-select if no model is selected yet
     if (!settings?.current_model) {
-      const downloadedModelEntry = Object.entries(models).find(([_, m]) => m.downloaded);
+      const downloadedModelEntry = Object.entries(models).find(
+        ([_, m]) => m.downloaded,
+      );
       if (downloadedModelEntry) {
         const [modelName, info] = downloadedModelEntry;
         updateSettings({
           current_model: modelName,
-          current_model_engine: info.engine ?? 'whisper',
-          language: 'en'
+          current_model_engine: info.engine ?? "whisper",
+          language: "en",
         }).catch((error) => {
-          console.error('[OnboardingDesktop] Failed to auto-select model:', error);
+          console.error(
+            "[OnboardingDesktop] Failed to auto-select model:",
+            error,
+          );
         });
       }
     }
@@ -152,19 +182,23 @@ export const OnboardingDesktop = function OnboardingDesktop({
     }
   };
 
-  const requestPermission = async (type: "microphone" | "accessibility" | "automation") => {
+  const requestPermission = async (
+    type: "microphone" | "accessibility" | "automation",
+  ) => {
     setIsRequesting(type);
     try {
       if (type === "microphone") {
         const granted = await requestMicPermission();
         if (!granted) {
-          await open("x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone");
+          await open(
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone",
+          );
         }
       } else if (type === "accessibility") {
         const granted = await requestAccessPermission();
         if (!granted) {
           await open(
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
           );
         }
       } else if (type === "automation") {
@@ -172,7 +206,9 @@ export const OnboardingDesktop = function OnboardingDesktop({
         const granted = await invoke<boolean>("test_automation_permission");
         if (!granted) {
           // Open automation settings if permission denied
-          await open("x-apple.systempreferences:com.apple.preference.security?Privacy_Automation");
+          await open(
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation",
+          );
         }
       }
     } catch (error) {
@@ -188,19 +224,22 @@ export const OnboardingDesktop = function OnboardingDesktop({
 
       // Dynamically detect engine from selected model
       const selectedModelName = settings?.current_model || "";
-      const selectedModel = selectedModelName ? models[selectedModelName] : null;
-      const engine = selectedModel?.engine || 'whisper';
+      const selectedModel = selectedModelName
+        ? models[selectedModelName]
+        : null;
+      const engine = selectedModel?.engine || "whisper";
 
       await updateSettings({
         hotkey: hotkey,
         current_model: selectedModelName,
         current_model_engine: engine,
-        language: 'en',
-        onboarding_completed: true
+        language: "en",
+        onboarding_completed: true,
       });
     } catch (error) {
       console.error("Failed to save settings:", error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       toast.error(errorMessage || "Failed to save settings. Please try again.");
       throw error; // Re-throw to prevent navigation
     }
@@ -218,7 +257,9 @@ export const OnboardingDesktop = function OnboardingDesktop({
         setCurrentStep(nextStep);
 
         if (nextStep === "models") {
-          console.log("[OnboardingDesktop] Navigating to models step, calling loadModels...");
+          console.log(
+            "[OnboardingDesktop] Navigating to models step, calling loadModels...",
+          );
           await loadModels();
           console.log("[OnboardingDesktop] loadModels completed");
         }
@@ -250,15 +291,14 @@ export const OnboardingDesktop = function OnboardingDesktop({
           permissions.accessibility.status === "granted"
         );
       // automation check removed for now
-      case "models":
-        // User can proceed if they have selected a model that is downloaded
-        {
-          const currentModel = settings?.current_model;
-          if (!currentModel) {
-            return false;
-          }
-          return models[currentModel]?.downloaded === true;
+      case "models": // User can proceed if they have selected a model that is downloaded
+      {
+        const currentModel = settings?.current_model;
+        if (!currentModel) {
+          return false;
         }
+        return models[currentModel]?.downloaded === true;
+      }
       default:
         return true;
     }
@@ -277,15 +317,17 @@ export const OnboardingDesktop = function OnboardingDesktop({
                   index < currentIndex
                     ? "bg-primary"
                     : index === currentIndex
-                    ? "bg-primary scale-125"
-                    : "bg-muted-foreground opacity-50"
+                      ? "bg-primary scale-125"
+                      : "bg-muted-foreground opacity-50",
                 )}
               />
               {index < steps.length - 1 && (
                 <div
                   className={cn(
                     "w-12 h-[1px] mx-1",
-                    index < currentIndex ? "bg-primary" : "bg-muted-foreground/30"
+                    index < currentIndex
+                      ? "bg-primary"
+                      : "bg-muted-foreground/30",
                   )}
                 />
               )}
@@ -302,7 +344,7 @@ export const OnboardingDesktop = function OnboardingDesktop({
             <div className="w-full max-w-2xl mx-auto animate-fade-in">
               <div className="text-center space-y-6">
                 <div className="space-y-2">
-                  <h1 className="text-4xl font-bold">Welcome to VoiceTypr</h1>
+                  <h1 className="text-4xl font-bold">Welcome to Verity</h1>
                   <p className="text-lg text-muted-foreground max-w-lg mx-auto">
                     Write 5x faster with your voice
                   </p>
@@ -322,7 +364,9 @@ export const OnboardingDesktop = function OnboardingDesktop({
               <div className="space-y-6">
                 <div className="text-center space-y-1">
                   <h2 className="text-2xl font-bold">System Permissions</h2>
-                  <p className="text-muted-foreground">Grant required permissions to continue</p>
+                  <p className="text-muted-foreground">
+                    Grant required permissions to continue
+                  </p>
                 </div>
 
                 <div className="flex flex-col justify-center items-center gap-4">
@@ -332,15 +376,15 @@ export const OnboardingDesktop = function OnboardingDesktop({
                       icon: Mic,
                       title: "Microphone",
                       desc: "Record your voice",
-                      ...permissions.microphone
+                      ...permissions.microphone,
                     },
                     {
                       type: "accessibility" as const,
                       icon: Keyboard,
                       title: "Accessibility",
                       desc: "Global hotkeys",
-                      ...permissions.accessibility
-                    }
+                      ...permissions.accessibility,
+                    },
                     // Automation permission removed for now
                     // Can be re-enabled later if needed
                   ].map((perm) => (
@@ -348,7 +392,7 @@ export const OnboardingDesktop = function OnboardingDesktop({
                       key={perm.type}
                       className={cn(
                         "p-2.5 transition-colors max-w-fit",
-                        perm.status === "granted" && "bg-green-500/5 "
+                        perm.status === "granted" && "bg-green-500/5 ",
                       )}
                     >
                       <div className="flex items-center justify-between gap-4">
@@ -359,17 +403,21 @@ export const OnboardingDesktop = function OnboardingDesktop({
                               perm.status === "granted"
                                 ? "bg-green-500/10 text-green-500"
                                 : perm.status === "error"
-                                ? "bg-red-500/10 text-red-500"
-                                : "bg-primary/10 text-primary"
+                                  ? "bg-red-500/10 text-red-500"
+                                  : "bg-primary/10 text-primary",
                             )}
                           >
                             <perm.icon className="h-5 w-5" />
                           </div>
                           <div>
                             <h3 className="font-medium w-30">{perm.title}</h3>
-                            <p className="text-sm text-muted-foreground">{perm.desc}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {perm.desc}
+                            </p>
                             {perm.status === "error" && perm.error && (
-                              <p className="text-xs text-red-500 mt-1">{perm.error}</p>
+                              <p className="text-xs text-red-500 mt-1">
+                                {perm.error}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -430,7 +478,11 @@ export const OnboardingDesktop = function OnboardingDesktop({
                     <ChevronLeft className="mr-1 h-4 w-4" />
                     Back
                   </Button>
-                  <Button onClick={handleNext} disabled={!canProceed()} size="sm">
+                  <Button
+                    onClick={handleNext}
+                    disabled={!canProceed()}
+                    size="sm"
+                  >
                     Continue
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
@@ -490,8 +542,9 @@ export const OnboardingDesktop = function OnboardingDesktop({
                                 const info = models[modelName];
                                 await updateSettings({
                                   current_model: modelName,
-                                  current_model_engine: info?.engine ?? 'whisper',
-                                  language: 'en'
+                                  current_model_engine:
+                                    info?.engine ?? "whisper",
+                                  language: "en",
                                 });
                               }}
                               onCancelDownload={cancelDownload}
@@ -522,7 +575,11 @@ export const OnboardingDesktop = function OnboardingDesktop({
                     <ChevronLeft className="mr-1 h-4 w-4" />
                     Back
                   </Button>
-                  <Button onClick={handleNext} disabled={!canProceed()} size="sm">
+                  <Button
+                    onClick={handleNext}
+                    disabled={!canProceed()}
+                    size="sm"
+                  >
                     Continue
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
@@ -546,9 +603,9 @@ export const OnboardingDesktop = function OnboardingDesktop({
                       <Keyboard className="h-4 w-4 text-primary" />
                       Recording Hotkey
                     </label>
-                    <HotkeyInput 
-                      value={hotkey} 
-                      onChange={setHotkey} 
+                    <HotkeyInput
+                      value={hotkey}
+                      onChange={setHotkey}
                       onEditingChange={setIsEditingHotkey}
                     />
                   </div>
@@ -568,9 +625,9 @@ export const OnboardingDesktop = function OnboardingDesktop({
                     <ChevronLeft className="mr-1 h-4 w-4" />
                     Back
                   </Button>
-                  <Button 
-                    onClick={handleNext} 
-                    size="sm" 
+                  <Button
+                    onClick={handleNext}
+                    size="sm"
                     disabled={isEditingHotkey}
                   >
                     Continue
@@ -596,7 +653,11 @@ export const OnboardingDesktop = function OnboardingDesktop({
                   </p>
                 </div>
 
-                <Button onClick={handleComplete} size="lg" className="min-w-[200px]">
+                <Button
+                  onClick={handleComplete}
+                  size="lg"
+                  className="min-w-[200px]"
+                >
                   Go to dashboard
                 </Button>
               </div>

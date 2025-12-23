@@ -2,15 +2,12 @@
 
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getVersion } from '@tauri-apps/api/app';
-import {
-  Info,
-  WifiOff
-} from "lucide-react";
-import { useEffect, useState } from 'react';
+import { getVersion } from "@tauri-apps/api/app";
+import { Info, WifiOff } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function AboutSection() {
-  const [appVersion, setAppVersion] = useState<string>('');
+  const [appVersion, setAppVersion] = useState<string>("");
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -18,8 +15,8 @@ export function AboutSection() {
         const version = await getVersion();
         setAppVersion(version);
       } catch (error) {
-        console.error('Failed to get app version:', error);
-        setAppVersion('Unknown');
+        console.error("Failed to get app version:", error);
+        setAppVersion("Unknown");
       }
     };
 
@@ -53,7 +50,7 @@ export function AboutSection() {
                   <span className="text-sm text-muted-foreground">Version</span>
                 </div>
                 <Badge variant="secondary" className="font-mono">
-                  v{appVersion || 'Loading...'}
+                  v{appVersion || "Loading..."}
                 </Badge>
               </div>
 
@@ -76,7 +73,7 @@ export function AboutSection() {
             <div className="rounded-lg border border-border/50 bg-card p-4">
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  VoiceTypr runs entirely on your device. Your voice recordings and
+                  Verity runs entirely on your device. Your voice recordings and
                   transcriptions never leave your computer.
                 </p>
                 <p>

@@ -19,7 +19,7 @@ import {
   Loader2,
   Mic,
   RefreshCw,
-  Trash2
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -27,7 +27,9 @@ import { toast } from "sonner";
 export function AdvancedSection() {
   const { updateSettings } = useSettings();
   const [isResetting, setIsResetting] = useState(false);
-  const [isRequestingPermission, setIsRequestingPermission] = useState<string | null>(null);
+  const [isRequestingPermission, setIsRequestingPermission] = useState<
+    string | null
+  >(null);
   const [showAccessibility, setShowAccessibility] = useState(true);
   const {
     hasAccessibilityPermission,
@@ -36,14 +38,16 @@ export function AdvancedSection() {
     requestAccessibilityPermission,
     requestMicrophonePermission,
     checkAccessibilityPermission,
-    checkMicrophonePermission
+    checkMicrophonePermission,
   } = useReadiness();
 
   useEffect(() => {
     setShowAccessibility(isMacOS);
   }, []);
 
-  const handleRequestPermission = async (type: "microphone" | "accessibility") => {
+  const handleRequestPermission = async (
+    type: "microphone" | "accessibility",
+  ) => {
     setIsRequestingPermission(type);
     try {
       if (type === "microphone") {
@@ -59,7 +63,7 @@ export function AdvancedSection() {
   const refresh = async () => {
     await Promise.all([
       checkAccessibilityPermission(),
-      checkMicrophonePermission()
+      checkMicrophonePermission(),
     ]);
   };
 
@@ -69,15 +73,27 @@ export function AdvancedSection() {
       icon: Mic,
       title: "Microphone",
       description: "To record your voice for transcription",
-      status: hasMicrophonePermission ? "granted" : isLoading ? "checking" : "denied"
+      status: hasMicrophonePermission
+        ? "granted"
+        : isLoading
+          ? "checking"
+          : "denied",
     },
-    ...(showAccessibility ? [{
-      type: "accessibility" as const,
-      icon: Keyboard,
-      title: "Accessibility",
-      description: "For global hotkeys to trigger recording",
-      status: hasAccessibilityPermission ? "granted" : isLoading ? "checking" : "denied"
-    }] : [])
+    ...(showAccessibility
+      ? [
+          {
+            type: "accessibility" as const,
+            icon: Keyboard,
+            title: "Accessibility",
+            description: "For global hotkeys to trigger recording",
+            status: hasAccessibilityPermission
+              ? "granted"
+              : isLoading
+                ? "checking"
+                : "denied",
+          },
+        ]
+      : []),
     // Automation permission removed for now
     // Can be re-enabled later if needed:
     // {
@@ -89,7 +105,6 @@ export function AdvancedSection() {
     // }
   ];
 
-
   const handleResetOnboarding = async () => {
     try {
       await updateSettings({
@@ -98,7 +113,7 @@ export function AdvancedSection() {
       toast.success("Onboarding reset!");
       // No need to reload - the settings update will trigger the UI change
     } catch (error) {
-      console.error('Failed to reset onboarding:', error);
+      console.error("Failed to reset onboarding:", error);
       toast.error("Failed to reset onboarding");
     }
   };
@@ -192,12 +207,19 @@ export function AdvancedSection() {
                   ))}
                 </div>
 
-                {(hasMicrophonePermission === false || (showAccessibility && hasAccessibilityPermission === false)) && (
+                {(hasMicrophonePermission === false ||
+                  (showAccessibility &&
+                    hasAccessibilityPermission === false)) && (
                   <div className="text-xs text-muted-foreground space-y-1 pt-2">
                     <p className="font-medium">Missing permissions:</p>
                     <ul className="list-disc list-inside space-y-0.5 ml-2">
-                      {hasMicrophonePermission === false && <li>Microphone: Required for voice recording</li>}
-                      {showAccessibility && hasAccessibilityPermission === false && <li>Accessibility: Required for global hotkeys</li>}
+                      {hasMicrophonePermission === false && (
+                        <li>Microphone: Required for voice recording</li>
+                      )}
+                      {showAccessibility &&
+                        hasAccessibilityPermission === false && (
+                          <li>Accessibility: Required for global hotkeys</li>
+                        )}
                     </ul>
                   </div>
                 )}
@@ -229,7 +251,7 @@ export function AdvancedSection() {
                 <div className="pt-3">
                   <p className="text-sm font-medium mb-1">Reset App Data</p>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Completely reset VoiceTypr to its initial state
+                    Completely reset Verity to its initial state
                   </p>
                   <ul className="text-xs text-muted-foreground list-disc list-inside mb-3 space-y-0.5">
                     <li>Delete all transcription history</li>
@@ -243,20 +265,22 @@ export function AdvancedSection() {
                     disabled={isResetting}
                     onClick={async () => {
                       const confirmed = await ask(
-                        "This action cannot be undone. This will permanently delete all your VoiceTypr data.\n\nThe app will restart after reset.\n\nAre you absolutely sure?",
+                        "This action cannot be undone. This will permanently delete all your Verity data.\n\nThe app will restart after reset.\n\nAre you absolutely sure?",
                         {
                           title: "Reset App Data",
                           okLabel: "Reset Everything",
                           cancelLabel: "Cancel",
-                          kind: "warning"
-                        }
+                          kind: "warning",
+                        },
                       );
 
                       if (confirmed) {
                         setIsResetting(true);
                         try {
                           await invoke("reset_app_data");
-                          toast.success("App data reset successfully. Restarting...");
+                          toast.success(
+                            "App data reset successfully. Restarting...",
+                          );
                           setTimeout(() => {
                             relaunch();
                           }, 1000);
@@ -284,7 +308,6 @@ export function AdvancedSection() {
                 </div>
               </div>
             </div>
-
           </div>
         </ScrollArea>
       </div>

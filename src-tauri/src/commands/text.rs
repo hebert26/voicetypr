@@ -120,7 +120,7 @@ fn insert_text_impl(
         return Err("No accessibility permission - text copied to clipboard. Please paste manually or grant accessibility permission.".to_string());
     }
 
-    // Step 3: Wait for focus to leave VoiceTypr (macOS only)
+    // Step 3: Wait for focus to leave Verity (macOS only)
     #[cfg(target_os = "macos")]
     {
         if let Err(e) = wait_for_focus_restoration(500) {
@@ -265,15 +265,12 @@ fn wait_for_focus_restoration(max_wait_ms: u64) -> Result<(), String> {
     let start = Instant::now();
     let check_interval = Duration::from_millis(10);
 
-    log::debug!(
-        "Waiting for focus to leave VoiceTypr (max {}ms)",
-        max_wait_ms
-    );
+    log::debug!("Waiting for focus to leave Verity (max {}ms)", max_wait_ms);
 
     while start.elapsed().as_millis() < max_wait_ms as u128 {
         match get_frontmost_app() {
             Ok(app) => {
-                if app != "VoiceTypr" && app != "voicetypr" {
+                if app != "Verity" && app != "verity" {
                     log::debug!(
                         "Focus restored to '{}' after {}ms",
                         app,

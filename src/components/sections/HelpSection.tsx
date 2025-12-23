@@ -11,15 +11,15 @@ import {
   Type,
   Download,
   Copy,
-  FileText
+  FileText,
 } from "lucide-react";
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { invoke } from '@tauri-apps/api/core';
-import { getVersion } from '@tauri-apps/api/app';
-import { platform, version as osVersion } from '@tauri-apps/plugin-os';
-import { useSettings } from '@/contexts/SettingsContext';
-import { useCanRecord, useCanAutoInsert } from '@/contexts/ReadinessContext';
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { invoke } from "@tauri-apps/api/core";
+import { getVersion } from "@tauri-apps/api/app";
+import { platform, version as osVersion } from "@tauri-apps/plugin-os";
+import { useSettings } from "@/contexts/SettingsContext";
+import { useCanRecord, useCanAutoInsert } from "@/contexts/ReadinessContext";
 
 interface QuickFix {
   id: string;
@@ -31,10 +31,10 @@ interface QuickFix {
 }
 
 export function HelpSection() {
-  const [appVersion, setAppVersion] = useState<string>('');
-  const [platformName, setPlatformName] = useState<string>('');
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [platformName, setPlatformName] = useState<string>("");
   const [openItems, setOpenItems] = useState<string[]>([]);
-  const [diagnostics, setDiagnostics] = useState<string>('');
+  const [diagnostics, setDiagnostics] = useState<string>("");
   const { settings } = useSettings();
   const canRecord = useCanRecord();
   const canAutoInsert = useCanAutoInsert();
@@ -54,21 +54,21 @@ export function HelpSection() {
         const lines: string[] = [
           `App Version: ${appVer}`,
           `OS: ${os} ${osVer}`,
-          `Model: ${settings?.current_model || 'None selected'}`,
+          `Model: ${settings?.current_model || "None selected"}`,
         ];
 
         // Hide permission lines on Windows (not required there)
-        if (os !== 'windows') {
+        if (os !== "windows") {
           lines.push(
-            `Microphone Permission: ${canRecord ? 'Granted' : 'Not granted'}`,
-            `Accessibility Permission: ${canAutoInsert ? 'Granted' : 'Not granted'}`
+            `Microphone Permission: ${canRecord ? "Granted" : "Not granted"}`,
+            `Accessibility Permission: ${canAutoInsert ? "Granted" : "Not granted"}`,
           );
         }
 
-        const diag = lines.join('\n');
+        const diag = lines.join("\n");
         setDiagnostics(diag);
       } catch (error) {
-        console.error('Failed to get system info:', error);
+        console.error("Failed to get system info:", error);
       }
     };
 
@@ -77,43 +77,47 @@ export function HelpSection() {
 
   const quickFixes: QuickFix[] = [
     {
-      id: 'recording',
-      title: 'Recording not working',
+      id: "recording",
+      title: "Recording not working",
       icon: Mic,
-      issue: 'Voice recording doesn\'t start when using hotkey',
-      solution: 'Go to Advanced section and check if Microphone permission is granted. Also check Settings to ensure a recording device is selected.',
-      checkStatus: () => canRecord
+      issue: "Voice recording doesn't start when using hotkey",
+      solution:
+        "Go to Advanced section and check if Microphone permission is granted. Also check Settings to ensure a recording device is selected.",
+      checkStatus: () => canRecord,
     },
     {
-      id: 'hotkey',
-      title: 'Hotkey not responding',
+      id: "hotkey",
+      title: "Hotkey not responding",
       icon: Keyboard,
-      issue: 'Global hotkey doesn\'t trigger recording',
-      solution: 'Go to Advanced section and grant Accessibility permission. This is required for global hotkeys to work.',
-      checkStatus: () => canAutoInsert
+      issue: "Global hotkey doesn't trigger recording",
+      solution:
+        "Go to Advanced section and grant Accessibility permission. This is required for global hotkeys to work.",
+      checkStatus: () => canAutoInsert,
     },
     {
-      id: 'insertion',
-      title: 'Text not inserting',
+      id: "insertion",
+      title: "Text not inserting",
       icon: Type,
-      issue: 'Transcribed text doesn\'t appear at cursor',
-      solution: 'Make sure your cursor is in an active text field. Accessibility permission must be granted in Advanced section.',
-      checkStatus: () => canAutoInsert
+      issue: "Transcribed text doesn't appear at cursor",
+      solution:
+        "Make sure your cursor is in an active text field. Accessibility permission must be granted in Advanced section.",
+      checkStatus: () => canAutoInsert,
     },
     {
-      id: 'download',
-      title: 'Model download stuck',
+      id: "download",
+      title: "Model download stuck",
       icon: Download,
-      issue: 'Whisper model download not progressing',
-      solution: 'Go to Models section, cancel the current download and try again. Check your internet connection.'
-    }
+      issue: "Whisper model download not progressing",
+      solution:
+        "Go to Models section, cancel the current download and try again. Check your internet connection.",
+    },
   ];
 
   const toggleItem = (itemId: string) => {
-    setOpenItems(prev => 
-      prev.includes(itemId) 
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
+    setOpenItems((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId],
     );
   };
 
@@ -122,20 +126,20 @@ export function HelpSection() {
   const handleCopySystemInfo = async () => {
     try {
       await navigator.clipboard.writeText(diagnostics);
-      toast.success('System info copied to clipboard');
+      toast.success("System info copied to clipboard");
     } catch (error) {
-      console.error('Failed to copy system info:', error);
-      toast.error('Failed to copy system info');
+      console.error("Failed to copy system info:", error);
+      toast.error("Failed to copy system info");
     }
   };
 
   const handleOpenLogs = async () => {
     try {
-      await invoke('open_logs_folder');
-      toast.info('Please attach the latest log file to your support message');
+      await invoke("open_logs_folder");
+      toast.info("Please attach the latest log file to your support message");
     } catch (error) {
-      console.error('Failed to open logs folder:', error);
-      toast.error('Failed to open logs folder');
+      console.error("Failed to open logs folder:", error);
+      toast.error("Failed to open logs folder");
     }
   };
 
@@ -158,12 +162,12 @@ export function HelpSection() {
           {/* Quick Fixes Section */}
           <div className="space-y-4">
             <h2 className="text-base font-semibold">Quick Fixes</h2>
-            
+
             <div className="space-y-2">
-              {quickFixes.map(fix => {
+              {quickFixes.map((fix) => {
                 const Icon = fix.icon;
                 const isOpen = openItems.includes(fix.id);
-                
+
                 return (
                   <Collapsible
                     key={fix.id}
@@ -174,21 +178,29 @@ export function HelpSection() {
                       <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors">
                         <div className="flex items-center gap-3">
                           <Icon className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">{fix.title}</span>
+                          <span className="text-sm font-medium">
+                            {fix.title}
+                          </span>
                         </div>
-                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        />
                       </CollapsibleTrigger>
-                      
+
                       <CollapsibleContent>
                         <div className="px-4 pb-4 pt-2 space-y-3 border-t border-border/50">
                           <div className="space-y-2">
                             <div className="space-y-1">
-                              <p className="text-xs font-medium text-muted-foreground">Issue</p>
+                              <p className="text-xs font-medium text-muted-foreground">
+                                Issue
+                              </p>
                               <p className="text-sm">{fix.issue}</p>
                             </div>
-                            
+
                             <div className="space-y-1 mt-3">
-                              <p className="text-xs font-medium text-muted-foreground">Solution</p>
+                              <p className="text-xs font-medium text-muted-foreground">
+                                Solution
+                              </p>
                               <p className="text-sm">{fix.solution}</p>
                             </div>
                           </div>
@@ -213,7 +225,8 @@ export function HelpSection() {
                 <div className="text-left">
                   <p className="text-sm font-medium">Offline Mode</p>
                   <p className="text-xs text-muted-foreground">
-                    This app operates entirely offline. All transcription and AI processing happens locally on your device.
+                    This app operates entirely offline. All transcription and AI
+                    processing happens locally on your device.
                   </p>
                 </div>
               </div>
@@ -223,7 +236,7 @@ export function HelpSection() {
           {/* Diagnostics Section */}
           <div className="space-y-4">
             <h2 className="text-base font-semibold">Diagnostics</h2>
-            
+
             <div className="space-y-3">
               <button
                 onClick={handleCopySystemInfo}
@@ -266,13 +279,12 @@ export function HelpSection() {
           {/* System Info Footer */}
           <div className="pt-4">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>VoiceTypr v{appVersion}</span>
+              <span>Verity v{appVersion}</span>
               <span>{platformName}</span>
             </div>
           </div>
         </div>
       </ScrollArea>
-
     </div>
   );
 }
