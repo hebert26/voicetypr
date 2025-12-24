@@ -24,6 +24,11 @@ interface ErrorEventPayload {
   suggestion?: string;
 }
 
+interface MicrophoneUnavailablePayload {
+  selected?: string;
+  fallback?: string;
+}
+
 export function AppContainer() {
   const { registerEvent } = useEventCoordinator("main");
   const [activeSection, setActiveSection] = useState<string>("overview");
@@ -80,6 +85,18 @@ export function AppContainer() {
           console.error("Tray action error:", event.payload);
           toast.error(event.payload as string);
         });
+
+        registerEvent<MicrophoneUnavailablePayload>(
+          "microphone-unavailable",
+          (data) => {
+            const selected = data?.selected?.trim() || "Selected microphone";
+            const fallback = data?.fallback?.trim() || "System Default";
+            toast.warning("Microphone Unavailable", {
+              description: `${selected} is not available. Using ${fallback}.`,
+              duration: 6000,
+            });
+          },
+        );
 
         registerEvent<string>("parakeet-unavailable", (message) => {
           const description =

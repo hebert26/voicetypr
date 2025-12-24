@@ -26,7 +26,7 @@ impl RecordingSize {
     }
 }
 
-fn normalize_device_name(name: &str) -> String {
+pub(crate) fn normalize_device_name(name: &str) -> String {
     name.replace('_', " ")
         .split_whitespace()
         .collect::<Vec<_>>()

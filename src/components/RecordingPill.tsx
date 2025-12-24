@@ -150,6 +150,21 @@ export function RecordingPill() {
       }),
     );
 
+    // Listen for microphone fallback warnings
+    unlisteners.push(
+      listen<{ selected?: string; fallback?: string }>(
+        "microphone-unavailable",
+        (event) => {
+          const selected = event.payload?.selected || "Selected microphone";
+          const fallback = event.payload?.fallback || "System Default";
+          setFeedbackWithTimeout(
+            `${selected} not available. Using ${fallback}.`,
+            3500,
+          );
+        },
+      ),
+    );
+
     // Listen for transcription errors
     unlisteners.push(
       listen<string>("transcription-error", (event) => {

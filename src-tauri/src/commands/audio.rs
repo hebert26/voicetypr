@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Manager, State};
 
-use crate::audio::recorder::AudioRecorder;
+use crate::audio::recorder::{normalize_device_name, AudioRecorder};
 use crate::commands::settings::get_settings;
 use crate::parakeet::messages::ParakeetResponse;
 use crate::parakeet::ParakeetManager;
@@ -10,7 +10,9 @@ use crate::utils::system_monitor;
 use crate::whisper::cache::TranscriberCache;
 use crate::whisper::languages::validate_language;
 use crate::whisper::manager::WhisperManager;
-use crate::{emit_to_window, update_recording_state, AppState, RecordingMode, RecordingState};
+use crate::{
+    emit_to_all, emit_to_window, update_recording_state, AppState, RecordingMode, RecordingState,
+};
 use cpal::traits::{DeviceTrait, HostTrait};
 use serde_json;
 use std::panic::{RefUnwindSafe, UnwindSafe};
@@ -492,8 +494,30 @@ pub async fn start_recording(
     let selected_microphone = match get_settings(app.clone()).await {
         Ok(settings) => {
             if let Some(mic) = settings.selected_microphone {
-                log::info!("Using selected microphone: {}", mic);
-                Some(mic)
+                let available_devices = AudioRecorder::get_devices();
+                let normalized_target = normalize_device_name(&mic);
+                let is_available = available_devices
+                    .iter()
+                    .any(|device| normalize_device_name(device) == normalized_target);
+
+                if is_available {
+                    log::info!("Using selected microphone: {}", mic);
+                    Some(mic)
+                } else {
+                    log::warn!(
+                        "Selected microphone '{}' not found; using system default",
+                        mic
+                    );
+                    let _ = emit_to_all(
+                        &app,
+                        "microphone-unavailable",
+                        serde_json::json!({
+                            "selected": mic,
+                            "fallback": "System Default"
+                        }),
+                    );
+                    None
+                }
             } else {
                 log::info!("Using default microphone");
                 None
