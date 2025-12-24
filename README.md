@@ -277,3 +277,10 @@ Windows: %APPDATA%\com.ideaplexa.voicetypr\models\
  
 
 Trigger PhraseToken Budgetthink~4,000 tokensthink hard, think deeply, megathink~10,000 tokensultrathink, think harder, think really hard~31,999 tokens
+
+
+Trigger Phrase                                    Token Budget
+─────────────────────────────────────────────────────────────────
+think                                             ~4,000 tokens
+think hard, think deeply, megathink               ~10,000 tokens
+ultrathink, think harder, think really hard       ~31,999 tokens
