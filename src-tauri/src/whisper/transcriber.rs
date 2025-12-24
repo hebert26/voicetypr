@@ -633,7 +633,7 @@ impl Transcriber {
 
         // Get text
         let text_extraction_start = Instant::now();
-        log::info!("[TRANSCRIPTION_DEBUG] Getting segments from Whisper output...");
+        log::debug!("[TRANSCRIPTION_DEBUG] Getting segments from Whisper output...");
         let num_segments = state.full_n_segments().map_err(|e| {
             let error = format!("Failed to get segments: {}", e);
             log::error!("[TRANSCRIPTION_DEBUG] {}", error);
@@ -652,7 +652,8 @@ impl Transcriber {
                 log::error!("[TRANSCRIPTION_DEBUG] {}", error);
                 error
             })?;
-            log::info!("[TRANSCRIPTION_DEBUG] Segment {}: '{}'", i, segment);
+            // OPTIMIZATION: Reduced from info to debug to avoid per-segment log I/O overhead
+            log::debug!("[TRANSCRIPTION_DEBUG] Segment {}: '{}'", i, segment);
             text.push_str(&segment);
             text.push(' ');
         }

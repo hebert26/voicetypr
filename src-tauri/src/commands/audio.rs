@@ -1141,14 +1141,81 @@ pub async fn stop_recording(
         }
     };
 
-    // For Whisper/Parakeet: normalize and duration gate; for Soniox: skip both
+    // Determine min duration based on recording mode (PTT vs Toggle) once
+    let (min_duration_s_f32, min_duration_s_i32) = {
+        let app_state = app.state::<AppState>();
+        let mode = app_state
+            .recording_mode
+            .lock()
+            .ok()
+            .map(|g| *g)
+            .unwrap_or(RecordingMode::Toggle);
+        match mode {
+            RecordingMode::PushToTalk => (1.0f32, 1i32),
+            RecordingMode::Toggle => (3.0f32, 3i32),
+        }
+    };
+
+    // OPTIMIZATION: Check duration on RAW audio BEFORE any processing
+    // This saves 2-5 seconds on too-short recordings by avoiding ffmpeg
+    let too_short = (|| -> Result<bool, String> {
+        let reader = hound::WavReader::open(&audio_path)
+            .map_err(|e| format!("Failed to open raw wav: {}", e))?;
+        let spec = reader.spec();
+        let total_samples = reader.duration();
+        let frames = total_samples / spec.channels as u32;
+        let duration = frames as f32 / spec.sample_rate as f32;
+        log_with_context(
+            log::Level::Info,
+            "RAW_AUDIO_CHECK",
+            &[
+                ("path", &format!("{:?}", audio_path).as_str()),
+                ("sample_rate", &spec.sample_rate.to_string().as_str()),
+                ("channels", &spec.channels.to_string().as_str()),
+                ("duration_s", &format!("{:.2}", duration).as_str()),
+            ],
+        );
+        Ok(duration < min_duration_s_f32)
+    })();
+
+    if let Ok(true) = too_short {
+        // Emit friendly feedback and stop here - NO ffmpeg processing needed!
+        let _ = emit_to_window(
+            &app,
+            "pill",
+            "recording-too-short",
+            format!("Recording shorter than {} seconds", min_duration_s_i32),
+        );
+        if let Err(e) = std::fs::remove_file(&audio_path) {
+            log::debug!("Failed to remove short raw audio: {}", e);
+        }
+        // Hide pill and return to Idle
+        if let Err(e) = crate::commands::window::hide_pill_widget(app.clone()).await {
+            log::error!("Failed to hide pill window: {}", e);
+        }
+        update_recording_state(&app, RecordingState::Idle, None);
+        return Ok("".to_string());
+    }
+
+    // For engines that need normalization, process the audio
+    // OPTIMIZATION: Whisper's transcriber.rs already handles resampling/conversion,
+    // so we skip ffmpeg for Whisper and pass raw audio directly (saves 2-5 seconds)
     let audio_path = match &engine_selection {
         ActiveEngineSelection::Soniox { .. } => {
             log::info!("[RECORD] Soniox selected — skipping normalization");
             audio_path
         }
-        _ => {
-            // Normalize captured audio to Whisper contract (WAV PCM s16, mono, 16k) via ffmpeg sidecar
+        ActiveEngineSelection::Whisper { .. } => {
+            // OPTIMIZATION: Skip ffmpeg! Transcriber handles conversion internally:
+            // - Reads any sample rate/channel count
+            // - Converts stereo to mono
+            // - Resamples to 16kHz using rubato
+            log::info!("[RECORD] Whisper selected — using transcriber's built-in conversion (skipping ffmpeg)");
+            audio_path
+        }
+        ActiveEngineSelection::Parakeet { .. } => {
+            // Parakeet: keep ffmpeg normalization for now (FluidAudio may have specific requirements)
+            log::info!("[RECORD] Parakeet selected — normalizing via ffmpeg");
             let parent_dir = audio_path
                 .parent()
                 .map(|p| p.to_path_buf())
@@ -1175,61 +1242,6 @@ pub async fn stop_recording(
             // Remove raw capture after successful normalization
             if let Err(e) = std::fs::remove_file(&audio_path) {
                 log::debug!("Failed to remove raw audio: {}", e);
-            }
-
-            // Determine min duration based on recording mode (PTT vs Toggle) once
-            let (min_duration_s_f32, min_duration_s_i32) = {
-                let app_state = app.state::<AppState>();
-                let mode = app_state
-                    .recording_mode
-                    .lock()
-                    .ok()
-                    .map(|g| *g)
-                    .unwrap_or(RecordingMode::Toggle);
-                match mode {
-                    RecordingMode::PushToTalk => (1.0f32, 1i32),
-                    RecordingMode::Toggle => (3.0f32, 3i32),
-                }
-            };
-
-            // Duration gate (mode-specific) using normalized file
-            let too_short = (|| -> Result<bool, String> {
-                let reader = hound::WavReader::open(&normalized_path)
-                    .map_err(|e| format!("Failed to open normalized wav: {}", e))?;
-                let spec = reader.spec();
-                let frames = reader.duration() / spec.channels as u32; // mono expected
-                let duration = frames as f32 / spec.sample_rate as f32;
-                log_with_context(
-                    log::Level::Info,
-                    "NORMALIZED_AUDIO",
-                    &[
-                        ("path", &format!("{:?}", normalized_path).as_str()),
-                        ("sample_rate", &spec.sample_rate.to_string().as_str()),
-                        ("channels", &spec.channels.to_string().as_str()),
-                        ("bits", &spec.bits_per_sample.to_string().as_str()),
-                        ("duration_s", &format!("{:.2}", duration).as_str()),
-                    ],
-                );
-                Ok(duration < min_duration_s_f32)
-            })();
-
-            if let Ok(true) = too_short {
-                // Emit friendly feedback and stop here
-                let _ = emit_to_window(
-                    &app,
-                    "pill",
-                    "recording-too-short",
-                    format!("Recording shorter than {} seconds", min_duration_s_i32),
-                );
-                if let Err(e) = std::fs::remove_file(&normalized_path) {
-                    log::debug!("Failed to remove short normalized audio: {}", e);
-                }
-                // Hide pill and return to Idle
-                if let Err(e) = crate::commands::window::hide_pill_widget(app.clone()).await {
-                    log::error!("Failed to hide pill window: {}", e);
-                }
-                update_recording_state(&app, RecordingState::Idle, None);
-                return Ok("".to_string());
             }
 
             normalized_path
