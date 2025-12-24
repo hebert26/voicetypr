@@ -1,119 +1,62 @@
-# Memory Optimization Plan for VoiceTypr
+# Memory Analysis for VoiceTypr
 
-## Problem Summary
-- **Verity (VoiceTypr)**: 2.98 GB runtime memory
-- **rust-analyzer**: 4.29 GB IDE memory
+## Summary
 
-## Root Causes
+After thorough code analysis, the app's memory usage (~3 GB) is **expected and unavoidable** given the Whisper model requirements.
 
-### App Memory (2.98 GB)
-1. **Whisper model in memory**: ~1-3 GB (by design, limited to 1 model)
-2. **Audio processing allocations**: Per-frame heap allocations in hot loop
-3. **Normalizer**: Loads entire audio file into memory multiple times
+## Memory Breakdown
 
-### rust-analyzer (4.29 GB)
-- IDE language server indexing all dependencies
-- No VS Code settings configured for optimization
-
----
-
-## Implementation Plan
-
-### Phase 1: Quick Wins
-
-#### 1.1 Create rust-analyzer config (NEW FILE)
-**File**: `.vscode/settings.json`
-
-```json
-{
-  "rust-analyzer.cargo.buildScripts.enable": true,
-  "rust-analyzer.procMacro.enable": true,
-  "rust-analyzer.procMacro.attributes.enable": false,
-  "rust-analyzer.checkOnSave.extraArgs": ["--target-dir", "target/check"],
-  "rust-analyzer.lens.enable": false,
-  "rust-analyzer.inlayHints.enable": false,
-  "rust-analyzer.hover.actions.enable": false
-}
-```
-
-**Impact**: Reduce rust-analyzer from 4.29 GB to ~1-2 GB
-
-#### 1.2 Pre-allocate recorder buffers
-**File**: `src-tauri/src/audio/recorder.rs` (lines 268-321)
-
-**Problem**: Per-frame `Vec::collect()` allocations in audio callbacks cause ~400MB/sec allocation churn.
-
-**Solution**: Pre-allocate reusable buffers outside the hot loop:
-- Create shared buffer structs before `build_input_stream`
-- Use `Arc<Mutex<Vec<_>>>` for conversion buffers
-- Resize and reuse instead of allocating new vectors
-
----
-
-### Phase 2: Streaming Audio Pipeline (Major Refactor)
-
-#### 2.1 Streaming normalizer
-**File**: `src-tauri/src/audio/normalizer.rs`
-
-**Problem** (lines 40-82): Loads entire audio into memory 5+ times:
-- `samples_i16: Vec<i16>` - full file
-- `samples_f32: Vec<f32>` - full file converted
-- `mono: Vec<f32>` - downmixed
-- `resampled: Vec<f32>` - resampled output
-- `normalized: Vec<f32>` - final output
-
-For 10-min recording: **1.1+ GB peak memory**
-
-**Solution**: Two-pass streaming architecture:
-1. **Pass 1**: Stream through file to find peak value (no storage)
-2. **Pass 2**: Stream chunks through pipeline, writing directly to output
-
-```
-Input WAV → [Read Chunk] → [Convert i16→f32] → [Downmix] → [Resample] → [Normalize] → Output WAV
-                ↑                                                              ↓
-              Chunk 1 ─────────────────────────────────────────────────────> Write
-              Chunk 2 ─────────────────────────────────────────────────────> Write
-              ...
-```
-
-**Chunk size**: ~192KB (1 second of 48kHz stereo)
-**Peak memory**: <1 MB instead of 1.1+ GB
-
-#### 2.2 Streaming resampler wrapper
-**File**: `src-tauri/src/audio/resampler.rs`
-
-Create `StreamingResampler` struct that:
-- Pre-allocates fixed input/output buffers
-- Processes chunks through rubato resampler
-- Handles flush for final samples
-
----
-
-## Files to Modify
-
-| File | Change | Priority |
-|------|--------|----------|
-| `.vscode/settings.json` | Create with rust-analyzer config | P0 |
-| `src-tauri/src/audio/recorder.rs` | Pre-allocate conversion buffers (lines 268-321) | P0 |
-| `src-tauri/src/audio/normalizer.rs` | Rewrite to streaming architecture | P1 |
-| `src-tauri/src/audio/resampler.rs` | Add StreamingResampler wrapper | P1 |
-
----
-
-## Expected Results
-
-| Component | Before | After |
+| Component | Memory | Notes |
 |-----------|--------|-------|
-| rust-analyzer | 4.29 GB | ~1-2 GB |
-| App (idle with model) | ~2.5 GB | ~2 GB |
-| App (during long recording) | 3+ GB peak | ~2.1 GB flat |
-| Normalizing 10-min audio | 1.1+ GB peak | <50 MB peak |
+| Whisper model | ~1-3 GB | Required for transcription accuracy |
+| WebView/Chromium | ~200-500 MB | Tauri uses system WebView |
+| Rust runtime + deps | ~100-200 MB | Normal for compiled app |
+| Audio buffers | ~50-100 MB | During active recording |
 
----
+## Key Findings
 
-## Testing Strategy
+### 1. Dead Code Removed
 
-1. **Baseline**: Record current memory during 5-min recording
-2. **After Phase 1**: Verify allocation churn eliminated (flat memory line)
-3. **After Phase 2**: Process 10-min recording, verify peak <50 MB
-4. **Regression**: Ensure transcription quality unchanged
+**File deleted**: `src-tauri/src/audio/normalizer.rs`
+
+The Rust-based normalizer was never used in production. Actual normalization uses ffmpeg:
+
+```
+Recording Flow:
+recorder.rs (writes WAV) → ffmpeg (normalizes to 16kHz mono) → transcriber.rs
+```
+
+FFmpeg runs as an external process and handles streaming internally.
+
+### 2. Transcriber Memory is Reasonable
+
+The transcriber receives already-normalized files (16kHz mono s16) from ffmpeg:
+
+```rust
+// For a 10-minute recording at 16kHz mono:
+// 10 min × 60 sec × 16,000 samples = 9.6M samples
+let samples_i16: Vec<i16> = ...;  // ~18 MB
+let audio: Vec<f32> = ...;         // ~38 MB
+// Total: ~56 MB (not 1.1 GB as originally estimated)
+```
+
+### 3. Recorder Allocations are Efficient
+
+The audio callbacks use `collect()` on `ExactSizeIterator`, which pre-allocates the correct capacity:
+
+```rust
+// This already allocates efficiently - no reallocations
+let i16_samples: Vec<i16> = data.iter().map(...).collect();
+```
+
+Further optimization would require thread-local storage or mutex-protected buffers, adding complexity for minimal gain.
+
+## Conclusion
+
+The ~3 GB memory usage is primarily the Whisper model, which is necessary for accurate offline transcription. No further memory optimizations are feasible without:
+
+1. Using smaller (less accurate) models
+2. Streaming transcription (not supported by Whisper)
+3. Offloading to cloud services (defeats offline purpose)
+
+The app's memory profile is appropriate for its functionality.

@@ -273,6 +273,7 @@ Windows: %APPDATA%\com.ideaplexa.voicetypr\models\
 1. Press hotkey → speak → press again → text inserted at cursor
 2. Double-press `Esc` to cancel
 
-## License
 
-[GNU Affero General Public License v3.0](LICENSE.md)
+ 
+
+Trigger PhraseToken Budgetthink~4,000 tokensthink hard, think deeply, megathink~10,000 tokensultrathink, think harder, think really hard~31,999 tokens

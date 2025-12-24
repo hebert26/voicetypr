@@ -41,7 +41,8 @@
       "Bash(do echo '=== $cmd ===')",
       "Bash(done)",
       "Bash(for cmd in verify_model invalidate_license_cache restore_license preload_model set_model_from_tray open_purchase_page get_log_directory)",
-      "Bash(do echo \"=== Checking: $cmd ===\")"
+      "Bash(do echo \"=== Checking: $cmd ===\")",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "additionalDirectories": [

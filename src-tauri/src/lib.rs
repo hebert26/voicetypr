@@ -1,6 +1,7 @@
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::Local;
+use image::GenericImageView;
 use serde_json;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -1255,20 +1256,37 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let menu = tauri::async_runtime::block_on(build_tray_menu(&app.app_handle()))?;
 
 
-            // Use default window icon for tray
-            let tray_icon = match app.default_window_icon() {
-                Some(icon) => icon.clone(),
-                None => {
-                    log::error!("Default window icon not found, cannot create tray");
-                    return Err(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::NotFound,
-                        "Default window icon not available"
-                    )));
+            // Use template tray icon on macOS for visibility across themes
+            let tray_icon = {
+                #[cfg(target_os = "macos")]
+                {
+                    let icon_bytes = include_bytes!("../icons/tray-icon.png");
+                    let icon_image = image::load_from_memory(icon_bytes).map_err(|e| {
+                        log::error!("Failed to decode tray icon: {}", e);
+                        Box::new(e) as Box<dyn std::error::Error>
+                    })?;
+                    let rgba = icon_image.to_rgba8();
+                    let (width, height) = icon_image.dimensions();
+                    tauri::image::Image::new_owned(rgba.into_raw(), width, height)
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    match app.default_window_icon() {
+                        Some(icon) => icon.clone(),
+                        None => {
+                            log::error!("Default window icon not found, cannot create tray");
+                            return Err(Box::new(std::io::Error::new(
+                                std::io::ErrorKind::NotFound,
+                                "Default window icon not available",
+                            )));
+                        }
+                    }
                 }
             };
 
             let _tray = TrayIconBuilder::with_id("main")
                 .icon(tray_icon)
+                .icon_as_template(cfg!(target_os = "macos"))
                 .tooltip("Verity")
                 .menu(&menu)
                 .on_menu_event(move |app, event| {
