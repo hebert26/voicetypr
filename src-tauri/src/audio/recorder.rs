@@ -1,5 +1,6 @@
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -200,8 +201,8 @@ impl AudioRecorder {
             let err_fn = |err| log::error!("Stream error: {}", err);
             let error_occurred = Arc::new(Mutex::new(None::<String>));
 
-            // Shared state for size tracking
-            let bytes_written = Arc::new(Mutex::new(0u64));
+            // Shared state for size tracking - use atomic for lock-free updates
+            let bytes_written = Arc::new(AtomicU64::new(0));
 
             // Common audio processing closure
             let process_audio = {
@@ -231,15 +232,12 @@ impl AudioRecorder {
                         }
                     }
 
-                    // Check size before writing
+                    // Check size before writing - lock-free atomic update
                     let sample_bytes = i16_samples.len() * 2; // 2 bytes per i16 sample
-                    if let Ok(mut bytes_guard) = bytes_clone.lock() {
-                        let new_total = *bytes_guard + sample_bytes as u64;
-                        if RecordingSize::check(new_total).is_err() {
-                            let _ = stop_tx_for_size.send(RecorderCommand::Stop);
-                            return;
-                        }
-                        *bytes_guard = new_total;
+                    let new_total = bytes_clone.fetch_add(sample_bytes as u64, Ordering::Relaxed) + sample_bytes as u64;
+                    if RecordingSize::check(new_total).is_err() {
+                        let _ = stop_tx_for_size.send(RecorderCommand::Stop);
+                        return;
                     }
 
                     // Write audio data (i16 format)

@@ -98,19 +98,23 @@ fn insert_text_impl(
         .set_text(&text)
         .map_err(|e| format!("Failed to set clipboard: {}", e))?;
 
-    log::info!("Clipboard set with {} chars", text.len());
+    log::debug!("Clipboard set with {} chars", text.len());
 
-    // Verify clipboard content was set
-    match clipboard.get_text() {
-        Ok(content) => {
-            if content == text {
-                log::debug!("Clipboard content verified");
-            } else {
-                log::warn!("Clipboard content mismatch!");
+    // Skip clipboard verification in release builds - it's an extra read + compare
+    // that adds latency without providing value in production
+    #[cfg(debug_assertions)]
+    {
+        match clipboard.get_text() {
+            Ok(content) => {
+                if content == text {
+                    log::debug!("Clipboard content verified");
+                } else {
+                    log::warn!("Clipboard content mismatch!");
+                }
             }
-        }
-        Err(e) => {
-            log::warn!("Could not verify clipboard: {}", e);
+            Err(e) => {
+                log::warn!("Could not verify clipboard: {}", e);
+            }
         }
     }
 

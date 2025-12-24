@@ -1035,7 +1035,12 @@ pub async fn stop_recording(
             }
         }
         _ => {
-            let downloaded_models = whisper_manager.read().await.get_downloaded_model_names();
+            // OPTIMIZATION: Batch read lock - get all needed data in one lock acquisition
+            // This reduces async lock cycles from 3-4 to 2
+            let (downloaded_models, models_by_size) = {
+                let manager = whisper_manager.read().await;
+                (manager.get_downloaded_model_names(), manager.get_models_by_size())
+            };
             log::debug!("Downloaded Whisper models: {:?}", downloaded_models);
 
             if downloaded_models.is_empty() {
@@ -1074,7 +1079,7 @@ pub async fn stop_recording(
                     );
                     configured_model
                 } else {
-                    let models_by_size = whisper_manager.read().await.get_models_by_size();
+                    // Use pre-fetched models_by_size instead of acquiring lock again
                     let fallback_model = select_best_fallback_model(
                         &downloaded_models,
                         &configured_model,
@@ -1109,7 +1114,7 @@ pub async fn stop_recording(
                     fallback_model
                 }
             } else {
-                let models_by_size = whisper_manager.read().await.get_models_by_size();
+                // Use pre-fetched models_by_size instead of acquiring lock again
                 let best_model =
                     select_best_fallback_model(&downloaded_models, "", &models_by_size);
 

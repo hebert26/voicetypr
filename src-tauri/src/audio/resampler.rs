@@ -15,12 +15,14 @@ pub fn resample_to_16khz(input: &[f32], input_sample_rate: u32) -> Result<Vec<f3
     // Calculate resampling ratio
     let resample_ratio = 16_000_f64 / input_sample_rate as f64;
 
-    // Configure resampler parameters for good quality
+    // Configure resampler parameters optimized for speech
+    // Speech has limited frequency content (85-8000 Hz), so we can use
+    // lower quality settings without audible degradation
     let params = SincInterpolationParameters {
-        sinc_len: 256,  // Good balance of quality and performance
+        sinc_len: 64,   // Reduced from 256 - sufficient for speech frequencies
         f_cutoff: 0.95, // Prevent aliasing
         interpolation: SincInterpolationType::Linear,
-        oversampling_factor: 256,
+        oversampling_factor: 128, // Reduced from 256 - sufficient for speech
         window: WindowFunction::BlackmanHarris2,
     };
 

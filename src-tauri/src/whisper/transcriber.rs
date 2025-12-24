@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 use std::path::Path;
 use std::time::Instant;
 use whisper_rs::{
@@ -6,6 +7,16 @@ use whisper_rs::{
 };
 
 use crate::utils::logger::*;
+
+/// Cached thread count for Whisper - calculated once at startup to avoid
+/// repeated syscalls to available_parallelism()
+static WHISPER_THREAD_COUNT: Lazy<i32> = Lazy::new(|| {
+    let hw = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
+    // Use most cores but leave one free to keep UI responsive
+    std::cmp::max(1, hw.saturating_sub(1)) as i32
+});
 #[cfg(debug_assertions)]
 use crate::utils::system_monitor;
 
@@ -513,11 +524,9 @@ impl Transcriber {
             params.set_translate(false);
         }
 
-        // Use most cores but leave one free to keep UI responsive
-        let hw = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
-        let threads = std::cmp::max(1, hw.saturating_sub(1)) as i32; // e.g., 8 cores -> 7 threads
-        params.set_n_threads(threads);
-        log::info!("[PERFORMANCE] Using {} threads for transcription", threads);
+        // Use cached thread count (calculated once at startup)
+        params.set_n_threads(*WHISPER_THREAD_COUNT);
+        log::debug!("[PERFORMANCE] Using {} threads for transcription", *WHISPER_THREAD_COUNT);
 
         params.set_no_context(false); // Enable context for better word recognition
         params.set_print_special(false);
