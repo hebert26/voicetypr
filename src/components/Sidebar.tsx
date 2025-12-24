@@ -7,7 +7,6 @@ import {
   SidebarMenuItem,
   Sidebar as SidebarPrimitive,
 } from "@/components/ui/sidebar";
-import { useLicense } from "@/contexts/LicenseContext";
 import { cn } from "@/lib/utils";
 import {
   Clock,
@@ -42,10 +41,6 @@ const mainSections = [
 const bottomSections = [{ id: "advanced", label: "Advanced", icon: Layers }];
 
 export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
-  const { status, isLoading } = useLicense();
-
-  // Show license status for all states (not just trial)
-  const showLicenseInfo = !isLoading && status;
 
   return (
     <SidebarPrimitive >
@@ -140,17 +135,12 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-border/40 p-3">
-        {showLicenseInfo && (
-          <div className="space-y-2">
-            {/* Offline mode - always shows licensed status */}
-            <div className="flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-green-500/10">
-              <VerifiedIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-              <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                Offline Mode
-              </span>
-            </div>
-          </div>
-        )}
+        <div className="flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-green-500/10">
+          <VerifiedIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <span className="text-xs font-medium text-green-600 dark:text-green-400">
+            Offline Mode
+          </span>
+        </div>
       </SidebarFooter>
     </SidebarPrimitive>
   );

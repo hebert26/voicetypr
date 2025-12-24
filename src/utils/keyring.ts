@@ -96,11 +96,6 @@ export const loadApiKeysToCache = async (): Promise<void> => {
   }
 };
 
-// OpenAI-compatible configuration helpers
-export const setOpenAIConfig = async (baseUrl: string, noAuth: boolean): Promise<void> => {
-  await invoke('set_openai_config', { baseUrl, noAuth });
-};
-
 export const saveOpenAIKeyWithConfig = async (
   apiKey: string,
   baseUrl: string,
@@ -126,34 +121,4 @@ export const saveOpenAIKeyWithConfig = async (
 
   console.log(`[Keyring] OpenAI-compatible config saved (noAuth=${noAuth})`);
   await emit('api-key-saved', { provider });
-};
-
-// STT (Speech-to-Text) cloud provider keys
-// Soniox support
-const STT_SONIOX_KEY = 'stt_api_key_soniox';
-
-export const saveSttApiKeySoniox = async (apiKey: string): Promise<void> => {
-  // Validate first; only persist to keyring on success
-  await invoke('validate_and_cache_soniox_key', { apiKey });
-  await keyringSet(STT_SONIOX_KEY, apiKey);
-  await emit('stt-key-saved', { provider: 'soniox' });
-};
-
-export const getSttApiKeySoniox = async (): Promise<string | null> => {
-  return keyringGet(STT_SONIOX_KEY);
-};
-
-export const hasSttApiKeySoniox = async (): Promise<boolean> => {
-  return keyringHas(STT_SONIOX_KEY);
-};
-
-export const removeSttApiKeySoniox = async (): Promise<void> => {
-  await keyringDelete(STT_SONIOX_KEY);
-  // Clear any backend cache if added in future; call is optional
-  try {
-    await invoke('clear_soniox_key_cache');
-  } catch (_) {
-    // best-effort; command may not exist in older builds
-  }
-  await emit('stt-key-removed', { provider: 'soniox' });
 };

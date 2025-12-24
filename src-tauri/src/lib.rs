@@ -1,3 +1,5 @@
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
 use chrono::Local;
 use serde_json;
 use std::collections::HashMap;
@@ -18,7 +20,6 @@ mod ai;
 mod audio;
 mod commands;
 mod ffmpeg;
-mod license;
 mod parakeet;
 mod secure_store;
 mod simple_cache;
@@ -42,13 +43,10 @@ use commands::{
     audio::*,
     clipboard::{copy_image_to_clipboard, save_image_to_file},
     debug::{debug_transcription_flow, test_transcription_event},
-    device::get_device_id,
     keyring::{keyring_delete, keyring_get, keyring_has, keyring_set},
-    license::*,
-    logs::{clear_old_logs, get_log_directory, open_logs_folder},
+    logs::{clear_old_logs, open_logs_folder},
     model::{
         cancel_download, delete_model, download_model, get_model_status, list_downloaded_models,
-        preload_model, verify_model,
     },
     permissions::{
         check_accessibility_permission, check_microphone_permission,
@@ -93,6 +91,17 @@ pub(crate) fn format_tray_model_label(
 fn is_local_base_url(base: &str) -> bool {
     let lower = base.to_lowercase();
     lower.contains("localhost") || lower.contains("127.0.0.1")
+}
+
+fn encode_microphone_menu_id(device_name: &str) -> String {
+    URL_SAFE_NO_PAD.encode(device_name.as_bytes())
+}
+
+fn decode_microphone_menu_id(encoded: &str) -> Option<String> {
+    URL_SAFE_NO_PAD
+        .decode(encoded)
+        .ok()
+        .and_then(|bytes| String::from_utf8(bytes).ok())
 }
 
 // Function to build the tray menu
@@ -297,7 +306,7 @@ async fn build_tray_menu<R: tauri::Runtime>(
             let is_selected = selected_microphone.as_ref() == Some(device_name);
             let mic_item = CheckMenuItem::with_id(
                 app,
-                &format!("microphone_{}", device_name),
+                &format!("microphone_{}", encode_microphone_menu_id(device_name)),
                 device_name,
                 true,
                 is_selected,
@@ -506,9 +515,6 @@ pub struct AppState {
     pub recording_config_cache:
         Arc<tokio::sync::RwLock<Option<crate::commands::audio::RecordingConfig>>>,
 
-    // License cache with 6-hour expiration
-    pub license_cache: Arc<tokio::sync::RwLock<Option<crate::commands::license::CachedLicense>>>,
-
     // Tracks recent Ollama readiness for tray status
     pub ollama_ready: Arc<AtomicBool>,
 }
@@ -528,7 +534,6 @@ impl AppState {
             esc_timeout_handle: Arc::new(Mutex::new(None)),
             window_manager: Arc::new(Mutex::new(None)),
             recording_config_cache: Arc::new(tokio::sync::RwLock::new(None)),
-            license_cache: Arc::new(tokio::sync::RwLock::new(None)),
             ollama_ready: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -1159,13 +1164,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
             }
 
-            // Clear license cache on app start to ensure fresh checks
-            {
-                use crate::simple_cache;
-                let _ = simple_cache::remove(&app.app_handle(), "license_status");
-                let _ = simple_cache::remove(&app.app_handle(), "last_license_validation");
-            }
-
             // Run comprehensive startup checks
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -1328,13 +1326,22 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         });
                     } else if event_id.starts_with("microphone_") {
                         // Handle specific microphone selection
-                        let device_name = match event_id.strip_prefix("microphone_") {
-                            Some(name) if name != "default" => Some(name.to_string()),
+                        let encoded_name = match event_id.strip_prefix("microphone_") {
+                            Some(name) if name != "default" => name,
                             _ => {
                                 // Already handled by microphone_default case above
                                 return;
                             }
                         };
+                        let decoded_name =
+                            decode_microphone_menu_id(encoded_name).unwrap_or_else(|| {
+                                log::warn!(
+                                    "Failed to decode microphone menu id '{}', using raw value",
+                                    encoded_name
+                                );
+                                encoded_name.to_string()
+                            });
+                        let device_name = Some(decoded_name);
                         let app_handle = app.app_handle().clone();
 
                         tauri::async_runtime::spawn(async move {
@@ -1758,8 +1765,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             get_current_audio_device,
             download_model,
             get_model_status,
-            preload_model,
-            verify_model,
             transcribe_audio,
             transcribe_audio_file,
             get_settings,
@@ -1787,12 +1792,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             check_microphone_permission,
             request_microphone_permission,
             test_automation_permission,
-            check_license_status,
-            restore_license,
-            activate_license,
-            deactivate_license,
-            open_purchase_page,
-            invalidate_license_cache,
             reset_app_data,
             copy_image_to_clipboard,
             save_image_to_file,
@@ -1816,9 +1815,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             keyring_has,
             validate_and_cache_soniox_key,
             clear_soniox_key_cache,
-            get_log_directory,
             open_logs_folder,
-            get_device_id,
         ])
         .on_window_event(|window, event| {
             match event {

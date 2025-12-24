@@ -1,22 +1,19 @@
 // Cloud providers have been removed for offline-only operation.
-// All transcription uses local Whisper or Parakeet models.
+// This stub is kept for backward compatibility with code that references it.
 
 export interface CloudProviderDefinition {
   id: string;
-  engine: string;
-  modelName: string;
-  displayName: string;
+  name: string;
   description: string;
   providerName: string;
-  addKey: (key: string) => Promise<void>;
+  modelName: string;
+  displayName: string;
+  setupCta: string;
+  docsUrl: string;
+  addKey: (apiKey: string) => Promise<void>;
   removeKey: () => Promise<void>;
-  hasKey: () => Promise<boolean>;
-  docsUrl?: string;
-  setupCta?: string;
 }
 
-// No cloud providers available - app operates fully offline
-export const CLOUD_PROVIDERS: Record<string, CloudProviderDefinition> = {};
-
-export const getCloudProviderByModel = (_modelName: string): CloudProviderDefinition | undefined =>
-  undefined;
+export const getCloudProviderByModel = (
+  _modelName: string
+): CloudProviderDefinition | undefined => undefined;

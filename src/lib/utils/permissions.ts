@@ -66,35 +66,3 @@ export async function openAccessibilitySettings(): Promise<void> {
     console.error("Failed to open accessibility settings:", error);
   }
 }
-
-/**
- * Get human-readable permission descriptions
- */
-export function getPermissionDescription(
-  permission: keyof PermissionStatus,
-): string {
-  const descriptions = {
-    microphone: "Required to record your voice for transcription",
-    accessibility: "Required to monitor keyboard shortcuts and insert text",
-  };
-
-  return descriptions[permission] || "Required for app functionality";
-}
-
-/**
- * Get instructions for enabling a permission
- */
-export function getPermissionInstructions(
-  permission: keyof PermissionStatus,
-): string {
-  const instructions = {
-    microphone:
-      "Go to System Settings → Privacy & Security → Microphone and enable Verity",
-    accessibility:
-      "Go to System Settings → Privacy & Security → Accessibility and enable Verity",
-  };
-
-  return (
-    instructions[permission] || "Check System Settings → Privacy & Security"
-  );
-}

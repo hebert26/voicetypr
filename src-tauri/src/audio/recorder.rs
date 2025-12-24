@@ -26,6 +26,14 @@ impl RecordingSize {
     }
 }
 
+fn normalize_device_name(name: &str) -> String {
+    name.replace('_', " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
 pub struct AudioRecorder {
     recording_handle: Arc<Mutex<Option<RecordingHandle>>>,
     audio_level_receiver: Arc<Mutex<Option<mpsc::Receiver<f64>>>>,
@@ -114,10 +122,16 @@ impl AudioRecorder {
         let thread_handle = thread::spawn(move || -> Result<String, String> {
             let host = cpal::default_host();
             let device = if let Some(device_name) = device_name {
+                let normalized_target = normalize_device_name(&device_name);
                 // Try to find the specified device
                 host.input_devices()
                     .map_err(|e| format!("Failed to enumerate input devices: {}", e))?
-                    .find(|d| d.name().map(|n| n == device_name).unwrap_or(false))
+                    .find(|d| {
+                        d.name()
+                            .ok()
+                            .map(|n| normalize_device_name(&n) == normalized_target)
+                            .unwrap_or(false)
+                    })
                     .ok_or_else(|| {
                         log::warn!(
                             "Specified device '{}' not found, falling back to default",

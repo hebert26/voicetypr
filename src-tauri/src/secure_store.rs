@@ -1,4 +1,3 @@
-use crate::license::device;
 use aes_gcm::{
     aead::{Aead, KeyInit},
     Aes256Gcm, Nonce,
@@ -7,19 +6,44 @@ use base64::{engine::general_purpose, Engine as _};
 use once_cell::sync::OnceCell;
 use pbkdf2::pbkdf2_hmac;
 use rand::Rng;
-use sha2::Sha256;
+use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_store::StoreExt;
 
 // Encryption key storage - OnceCell ensures thread-safe single initialization
 static ENCRYPTION_KEY: OnceCell<[u8; 32]> = OnceCell::new();
 
+/// Get a device-specific hash for encryption key derivation
+fn get_device_hash() -> Result<String, String> {
+    use sysinfo::System;
+
+    // Collect stable device identifiers
+    let mut identifiers = String::new();
+
+    // Get host name
+    identifiers.push_str(&System::host_name().unwrap_or_else(|| "unknown-host".to_string()));
+
+    // Get OS info
+    identifiers.push_str(&System::name().unwrap_or_else(|| "unknown-os".to_string()));
+    identifiers.push_str(&System::os_version().unwrap_or_else(|| "unknown-version".to_string()));
+
+    // Add a constant app-specific value for additional uniqueness
+    identifiers.push_str("voicetypr-device-key");
+
+    // Hash the identifiers with SHA256 for consistent length and format
+    let mut hasher = Sha256::new();
+    hasher.update(identifiers.as_bytes());
+    let result = hasher.finalize();
+
+    Ok(hex::encode(result))
+}
+
 /// Initialize the encryption key using the device hash with PBKDF2
 pub fn initialize_encryption_key() -> Result<(), String> {
     ENCRYPTION_KEY
         .get_or_try_init(|| {
-            // Get the same device hash used for API authentication
-            let device_hash = device::get_device_hash()?;
+            // Get device-specific hash
+            let device_hash = get_device_hash()?;
 
             // Validate device hash has sufficient entropy
             // SHA256 produces 64 hex chars, we need at least that

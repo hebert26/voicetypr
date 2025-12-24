@@ -10,7 +10,6 @@ import { useReadiness } from "@/contexts/ReadinessContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useEventCoordinator } from "@/hooks/useEventCoordinator";
 import { useModelManagementContext } from "@/contexts/ModelManagementContext";
-import { updateService } from "@/services/updateService";
 import { loadApiKeysToCache } from "@/utils/keyring";
 
 // Type for error event payloads from backend
@@ -55,11 +54,6 @@ export function AppContainer() {
           });
         }
 
-        // Initialize update service for automatic update checks
-        if (settings) {
-          await updateService.initialize(settings);
-        }
-
         // Load API keys from Stronghold to backend cache
         // Small delay to ensure Stronghold is ready
         setTimeout(() => {
@@ -99,26 +93,6 @@ export function AppContainer() {
           });
         });
 
-        // Listen for license-required event and navigate to License section
-        registerEvent<{ title: string; message: string; action?: string }>(
-          "license-required",
-          (data) => {
-            console.log(
-              "License required event received in AppContainer:",
-              data,
-            );
-            // Navigate to License section to show license management
-            setActiveSection("license");
-            // Show a toast to inform the user
-            toast.error(data.title || "License Required", {
-              description:
-                data.message ||
-                "Please purchase or restore a license to continue",
-              duration: 5000,
-            });
-          },
-        );
-
         // Listen for no models error (when trying to record without any models)
         registerEvent<ErrorEventPayload>("no-models-error", (data) => {
           console.error("No models available:", data);
@@ -132,7 +106,6 @@ export function AppContainer() {
 
         return () => {
           window.removeEventListener("no-models-available", handleNoModels);
-          updateService.dispose();
         };
       } catch (error) {
         console.error("Failed to initialize:", error);
