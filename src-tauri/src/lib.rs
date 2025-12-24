@@ -416,13 +416,6 @@ async fn build_tray_menu<R: tauri::Runtime>(
     let separator_status = PredefinedMenuItem::separator(app)?;
     let separator1 = PredefinedMenuItem::separator(app)?;
     let settings_i = MenuItem::with_id(app, "settings", "Open Dashboard…", true, None::<&str>)?;
-    let check_updates_i = MenuItem::with_id(
-        app,
-        "check_updates",
-        "Check for Updates…",
-        true,
-        None::<&str>,
-    )?;
     let restart_i = MenuItem::with_id(app, "restart", "Restart Verity", true, None::<&str>)?;
     let separator2 = PredefinedMenuItem::separator(app)?;
     let quit_i = MenuItem::with_id(app, "quit", "Quit Verity", true, None::<&str>)?;
@@ -454,7 +447,6 @@ async fn build_tray_menu<R: tauri::Runtime>(
     let menu = menu_builder
         .item(&separator1)
         .item(&settings_i)
-        .item(&check_updates_i)
         .item(&restart_i)
         .item(&separator2)
         .item(&quit_i)
@@ -1294,8 +1286,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     } else if event_id == "quit" {
                         app.exit(0);
-                    } else if event_id == "check_updates" {
-                        let _ = app.emit("tray-check-updates", ());
                     } else if event_id == "restart" {
                         app.request_restart();
                     } else if event_id.starts_with("model_") {
