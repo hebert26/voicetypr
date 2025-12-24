@@ -722,6 +722,19 @@ pub async fn start_recording(
     // Update state to recording
     update_recording_state(&app, RecordingState::Recording, None);
 
+    // Preload AI model in background if enhancement is enabled
+    // This warms up Ollama while user is speaking, reducing latency after transcription
+    if config.ai_enabled {
+        let app_for_preload = app.clone();
+        tokio::spawn(async move {
+            if let Err(e) = crate::commands::ai::keep_ollama_warm(app_for_preload).await {
+                log::debug!("AI model preload skipped: {}", e);
+            } else {
+                log::debug!("AI model preloaded successfully");
+            }
+        });
+    }
+
     // Show pill widget if enabled (graceful degradation)
     if config.show_pill_widget {
         match crate::commands::window::show_pill_widget(app.clone()).await {

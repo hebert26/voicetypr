@@ -1,7 +1,6 @@
 use super::config::*;
-use super::{prompts, AIEnhancementRequest, AIEnhancementResponse, AIError, AIProvider};
+use super::{prompts, AIEnhancementRequest, AIEnhancementResponse, AIError, AIProvider, AI_HTTP_CLIENT};
 use async_trait::async_trait;
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -9,7 +8,6 @@ use std::time::Duration;
 pub struct OpenAIProvider {
     api_key: String,
     model: String,
-    client: Client,
     base_url: String,
     options: HashMap<String, serde_json::Value>,
 }
@@ -34,11 +32,6 @@ impl OpenAIProvider {
                 "Invalid API key format".to_string(),
             ));
         }
-
-        let client = Client::builder()
-            .timeout(Duration::from_secs(DEFAULT_TIMEOUT_SECS))
-            .build()
-            .map_err(|e| AIError::NetworkError(format!("Failed to create HTTP client: {}", e)))?;
 
         // Resolve base URL - ONLY localhost is allowed for offline-only mode
         let base_root = options
@@ -71,7 +64,6 @@ impl OpenAIProvider {
         Ok(Self {
             api_key,
             model,
-            client,
             base_url,
             options,
         })
@@ -114,8 +106,8 @@ impl OpenAIProvider {
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
-        let mut req = self
-            .client
+        // Use global HTTP client for connection reuse
+        let mut req = AI_HTTP_CLIENT
             .post(&self.base_url)
             .header("Content-Type", "application/json")
             .json(request);

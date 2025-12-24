@@ -1,10 +1,24 @@
 use async_trait::async_trait;
+use once_cell::sync::Lazy;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::time::Duration;
 
 pub mod config;
 pub mod openai;
 pub mod prompts;
+
+/// Global HTTP client for AI requests - reused across all requests to avoid
+/// connection setup overhead. Configured with shorter timeout for local Ollama.
+pub static AI_HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
+    Client::builder()
+        .timeout(Duration::from_secs(config::LOCAL_TIMEOUT_SECS))
+        .pool_idle_timeout(Duration::from_secs(60))
+        .pool_max_idle_per_host(2)
+        .build()
+        .expect("Failed to create AI HTTP client")
+});
 
 pub use config::MAX_TEXT_LENGTH;
 pub use prompts::EnhancementOptions;

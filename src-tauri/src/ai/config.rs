@@ -1,13 +1,16 @@
 /// Configuration constants for AI providers
 
-/// Default timeout for API requests in seconds
+/// Default timeout for API requests in seconds (cloud providers)
 pub const DEFAULT_TIMEOUT_SECS: u64 = 30;
 
-/// Maximum number of retry attempts for API calls
-pub const MAX_RETRIES: u32 = 3;
+/// Timeout for local Ollama requests - much shorter since it's local
+pub const LOCAL_TIMEOUT_SECS: u64 = 15;
 
-/// Base delay in milliseconds for exponential backoff
-pub const RETRY_BASE_DELAY_MS: u64 = 1000;
+/// Maximum number of retry attempts for API calls
+pub const MAX_RETRIES: u32 = 2;
+
+/// Base delay in milliseconds for exponential backoff (reduced for local)
+pub const RETRY_BASE_DELAY_MS: u64 = 200;
 
 /// Minimum API key length for basic validation
 pub const MIN_API_KEY_LENGTH: usize = 10;
@@ -19,4 +22,5 @@ pub const DEFAULT_TEMPERATURE: f32 = 0.2;
 /// Maximum text length for enhancement requests
 pub const MAX_TEXT_LENGTH: usize = 10_000;
 
-pub const OLLAMA_KEEPALIVE_INTERVAL_SECS: u64 = 120;
+/// Interval for keeping Ollama model warm (prevents cold starts)
+pub const OLLAMA_KEEPALIVE_INTERVAL_SECS: u64 = 60;
