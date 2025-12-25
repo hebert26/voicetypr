@@ -561,6 +561,40 @@ pub async fn update_enhancement_options(
 }
 
 #[tauri::command]
+pub async fn set_thinking_mode(app: tauri::AppHandle, prefix: String) -> Result<(), String> {
+    let store = app.store("settings").map_err(|e| e.to_string())?;
+
+    // Get current options or create default
+    let mut options: EnhancementOptions = if let Some(options_value) = store.get("enhancement_options") {
+        serde_json::from_value(options_value.clone())
+            .map_err(|e| format!("Failed to parse enhancement options: {}", e))?
+    } else {
+        EnhancementOptions::default()
+    };
+
+    // Update only the output_prefix
+    options.output_prefix = if prefix.is_empty() {
+        None
+    } else {
+        Some(prefix.clone())
+    };
+
+    store.set(
+        "enhancement_options",
+        serde_json::to_value(&options)
+            .map_err(|e| format!("Failed to serialize options: {}", e))?,
+    );
+
+    store
+        .save()
+        .map_err(|e| format!("Failed to save thinking mode: {}", e))?;
+
+    log::info!("Thinking mode updated: output_prefix={:?}", options.output_prefix);
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn enhance_transcription(text: String, app: tauri::AppHandle) -> Result<String, String> {
     // Quick validation
     if text.trim().is_empty() {

@@ -38,8 +38,8 @@ use commands::{
     ai::{
         cache_ai_api_key, clear_ai_api_key_cache, disable_ai_enhancement, enhance_transcription,
         get_ai_settings, get_ai_settings_for_provider, get_enhancement_options, get_openai_config,
-        set_openai_config, test_openai_endpoint, update_ai_settings, update_enhancement_options,
-        validate_and_cache_api_key,
+        set_openai_config, set_thinking_mode, test_openai_endpoint, update_ai_settings,
+        update_enhancement_options, validate_and_cache_api_key,
     },
     audio::*,
     clipboard::{copy_image_to_clipboard, save_image_to_file},
@@ -103,6 +103,36 @@ fn decode_microphone_menu_id(encoded: &str) -> Option<String> {
         .decode(encoded)
         .ok()
         .and_then(|bytes| String::from_utf8(bytes).ok())
+}
+
+// Thinking mode presets - must match frontend constants
+const THINKING_PRESET_HARD: &str = "Think hard about this problem. Consider multiple approaches, evaluate tradeoffs, and explain your reasoning.";
+const THINKING_PRESET_HARDER: &str = "Think harder about this problem. Analyze it from multiple angles, consider edge cases and potential issues, weigh all tradeoffs, and provide comprehensive reasoning before proposing a solution.";
+const THINKING_PRESET_ULTRA: &str = "Ultrathink about this problem. Conduct an exhaustive analysis considering all dimensions, dependencies, risks, and edge cases. Explore multiple solution paths, evaluate each thoroughly, and synthesize your complete reasoning into a comprehensive response.";
+
+fn detect_thinking_mode(prefix: &str) -> &'static str {
+    if prefix.is_empty() {
+        return "think";
+    }
+    if prefix == THINKING_PRESET_HARD {
+        return "hard";
+    }
+    if prefix == THINKING_PRESET_HARDER {
+        return "harder";
+    }
+    if prefix == THINKING_PRESET_ULTRA {
+        return "ultra";
+    }
+    "custom"
+}
+
+fn get_thinking_prefix(mode: &str) -> &'static str {
+    match mode {
+        "hard" => THINKING_PRESET_HARD,
+        "harder" => THINKING_PRESET_HARDER,
+        "ultra" => THINKING_PRESET_ULTRA,
+        _ => "", // "think" or unknown
+    }
 }
 
 // Function to build the tray menu
@@ -453,6 +483,43 @@ async fn build_tray_menu<R: tauri::Runtime>(
     let mode_submenu =
         Submenu::with_id_and_items(app, "recording_mode", "Recording Mode", true, &mode_items)?;
     menu_builder = menu_builder.item(&mode_submenu);
+
+    // Thinking mode submenu
+    let (thinking_mode, thinking_display) = {
+        let mode = match app.store("settings") {
+            Ok(store) => {
+                if let Some(opts) = store.get("enhancement_options") {
+                    if let Some(prefix) = opts.get("output_prefix").and_then(|v| v.as_str()) {
+                        detect_thinking_mode(prefix)
+                    } else {
+                        "think"
+                    }
+                } else {
+                    "think"
+                }
+            }
+            Err(_) => "think",
+        };
+
+        let display = match mode {
+            "hard" => "Thinking Mode: Think Hard",
+            "harder" => "Thinking Mode: Think Harder",
+            "ultra" => "Thinking Mode: Ultrathink",
+            "custom" => "Thinking Mode: Custom",
+            _ => "Thinking Mode: Think",
+        };
+        (mode.to_string(), display)
+    };
+
+    let think_item = CheckMenuItem::with_id(app, "thinking_think", "Think", true, thinking_mode == "think", None::<&str>)?;
+    let hard_item = CheckMenuItem::with_id(app, "thinking_hard", "Think Hard", true, thinking_mode == "hard", None::<&str>)?;
+    let harder_item = CheckMenuItem::with_id(app, "thinking_harder", "Think Harder", true, thinking_mode == "harder", None::<&str>)?;
+    let ultra_item = CheckMenuItem::with_id(app, "thinking_ultra", "Ultrathink", true, thinking_mode == "ultra", None::<&str>)?;
+    let custom_item = CheckMenuItem::with_id(app, "thinking_custom", "Custom", true, thinking_mode == "custom", None::<&str>)?;
+
+    let thinking_items: Vec<&dyn tauri::menu::IsMenuItem<_>> = vec![&think_item, &hard_item, &harder_item, &ultra_item, &custom_item];
+    let thinking_submenu = Submenu::with_id_and_items(app, "thinking_mode", thinking_display, true, &thinking_items)?;
+    menu_builder = menu_builder.item(&thinking_submenu);
 
     let menu = menu_builder
         .item(&separator1)
@@ -1427,6 +1494,34 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                             }
                         });
                     }
+                    // Thinking mode switchers
+                    else if event_id.starts_with("thinking_") {
+                        let mode = event_id.strip_prefix("thinking_").unwrap_or("think");
+                        // Skip "custom" - can only be set from dashboard
+                        if mode == "custom" {
+                            return;
+                        }
+
+                        let app_handle = app.app_handle().clone();
+                        let mode_owned = mode.to_string();
+
+                        tauri::async_runtime::spawn(async move {
+                            let prefix = get_thinking_prefix(&mode_owned);
+                            match crate::commands::ai::set_thinking_mode(app_handle.clone(), prefix.to_string()).await {
+                                Ok(_) => {
+                                    log::info!("Thinking mode changed from tray to: {}", mode_owned);
+                                    if let Err(e) = crate::commands::settings::update_tray_menu(app_handle.clone()).await {
+                                        log::warn!("Failed to refresh tray after thinking mode change: {}", e);
+                                    }
+                                    let _ = app_handle.emit("settings-changed", ());
+                                }
+                                Err(e) => {
+                                    log::error!("Failed to set thinking mode from tray: {}", e);
+                                    let _ = app_handle.emit("tray-action-error", &format!("Failed to change thinking mode: {}", e));
+                                }
+                            }
+                        });
+                    }
                 })
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {
@@ -1827,6 +1922,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             disable_ai_enhancement,
             get_enhancement_options,
             update_enhancement_options,
+            set_thinking_mode,
             keyring_set,
             keyring_get,
             keyring_delete,
