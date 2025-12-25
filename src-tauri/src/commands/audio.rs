@@ -1590,6 +1590,29 @@ pub async fn stop_recording(
                         }
                     };
 
+                    // Apply output prefix if configured
+                    let final_text = {
+                        match crate::commands::ai::get_enhancement_options(app_for_process.clone()).await {
+                            Ok(options) => {
+                                if let Some(prefix) = options.output_prefix {
+                                    let trimmed_prefix = prefix.trim();
+                                    if !trimmed_prefix.is_empty() {
+                                        log::debug!("Applying output prefix: {}", trimmed_prefix);
+                                        format!("{}\n\n{}", trimmed_prefix, final_text)
+                                    } else {
+                                        final_text
+                                    }
+                                } else {
+                                    final_text
+                                }
+                            }
+                            Err(e) => {
+                                log::warn!("Failed to load enhancement options for prefix: {}", e);
+                                final_text
+                            }
+                        }
+                    };
+
                     // 2. Hide pill window first, then insert text with reduced delay
                     let app_state = app_for_process.state::<AppState>();
 

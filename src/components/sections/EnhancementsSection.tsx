@@ -67,11 +67,13 @@ export function EnhancementsSection() {
     preset: "Default" | "Prompts";
     customVocabulary: string[];
     customInstructions?: string;
+    outputPrefix?: string;
   }>({
     preset: "Default",
     customVocabulary: [],
     customInstructions:
       "Fix any mistakes. Make sure sentences are clear and make sense.",
+    outputPrefix: "",
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 

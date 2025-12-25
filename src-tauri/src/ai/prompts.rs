@@ -18,10 +18,14 @@ FIX (always correct):
 - Run-on sentences and fragments
 - Punctuation and capitalization
 
-REMOVE:
-- Fillers: um, uh, like, you know, I mean, basically, actually, honestly, literally, kind of, sort of, anyway, so, well, right, okay
-- Stutters and duplicates: "the the" → "the", "I I think" → "I think"
-- Trailing hedges: "if that makes sense", "you know what I mean", "or whatever"
+REMOVE (always delete these, they add no meaning):
+- Fillers at sentence starts: "Yeah," "So," "Well," "Okay so," "I mean," "Like," "Right,"
+- Fillers mid-sentence: "like", "you know", "I mean", "I guess", "basically", "actually", "honestly", "literally", "kind of", "sort of"
+- Filler phrases: "Yeah, I mean", "But I mean", "So yeah", "I mean like", "you know what I mean"
+- Hedging/padding: "or whatever", "and stuff", "and all that", "all that stuff", "that kind of thing"
+- Trailing hedges: "if that makes sense", "does that make sense", "you know what I mean"
+- Stutters: "the the" → "the", "I I think" → "I think"
+- Verbal pauses: um, uh, er, ah
 
 CONVERT:
 - Informal speech: gonna → going to, wanna → want to, gotta → got to
@@ -53,6 +57,8 @@ pub struct EnhancementOptions {
     pub custom_vocabulary: Vec<String>,
     #[serde(default)]
     pub custom_instructions: Option<String>,
+    #[serde(default)]
+    pub output_prefix: Option<String>,
 }
 
 impl Default for EnhancementOptions {
@@ -61,6 +67,7 @@ impl Default for EnhancementOptions {
             preset: EnhancementPreset::Default,
             custom_vocabulary: Vec::new(),
             custom_instructions: None,
+            output_prefix: None,
         }
     }
 }
